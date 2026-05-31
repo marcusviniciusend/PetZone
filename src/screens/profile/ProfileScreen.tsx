@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Mod
 import { supabase } from '../../lib/supabase';
 import { petService } from '../../services/petService';
 import { profileService } from '../../services/profileService';
+import { useActivePetStore } from '../../stores/activePetStore';
 import { Profile, Pet } from '../../types';
 import { colors } from '../../theme/colors';
 import _Icon from 'react-native-vector-icons/Ionicons';
@@ -18,6 +19,7 @@ export default function ProfileScreen() {
   const [showPets, setShowPets] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [myPets, setMyPets] = useState<Pet[]>([]);
+  const { activePetId, setActivePetId } = useActivePetStore();
 
   useEffect(() => {
     loadProfile();
@@ -33,6 +35,9 @@ export default function ProfileScreen() {
   async function loadMyPets() {
     const data = await petService.getMyPets();
     setMyPets(data);
+    if (!activePetId && data.length > 0) {
+      setActivePetId(data[0].id);
+    }
   }
 
   const handleOpenPets = async () => {
@@ -77,7 +82,7 @@ export default function ProfileScreen() {
             <Icon name="camera" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
-        
+
         <Text style={styles.name}>{profile?.full_name || 'Tutor Sem Nome'}</Text>
         <Text style={styles.bio}>{profile?.bio || 'Adicione uma bio para que outros tutores o conheçam!'}</Text>
       </View>
@@ -89,7 +94,7 @@ export default function ProfileScreen() {
           <Text style={styles.menuText}>Meus Pets</Text>
           <Icon name="chevron-forward" size={20} color="#ccc" style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
-        
+
         <TouchableOpacity style={styles.menuItem} onPress={() => setShowSettings(true)}>
           <Icon name="settings-outline" size={24} color={colors.text} />
           <Text style={styles.menuText}>Configurações</Text>
@@ -117,7 +122,7 @@ export default function ProfileScreen() {
               <View style={styles.emptyState}>
                 <Icon name="paw-outline" size={60} color="#ddd" />
                 <Text style={styles.emptyText}>Você ainda não cadastrou nenhum pet.</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.primaryButton}
                   onPress={() => {
                     setShowPets(false);
@@ -129,25 +134,51 @@ export default function ProfileScreen() {
               </View>
             ) : (
               <View>
-                {myPets.map((pet) => (
-                  <TouchableOpacity
-                    key={pet.id}
-                    style={styles.petItemCard}
-                    onPress={() => {
-                      setShowPets(false);
-                      navigation.navigate('EditPet', { pet });
-                    }}
-                  >
-                    <Icon name="paw" size={24} color={colors.primary} />
-                    <View style={{ marginLeft: 15, flex: 1 }}>
-                      <Text style={styles.petNameText}>{pet.name}</Text>
-                      <Text style={styles.petDetailText}>{pet.species} • {pet.breed || 'Raça não definida'}</Text>
+                <Text style={styles.activePetHint}>
+                  Toque no ícone de rádio para selecionar o pet ativo no Swipe.
+                </Text>
+
+                {myPets.map((pet) => {
+                  const isActive = pet.id === activePetId;
+                  return (
+                    <View key={pet.id} style={[styles.petItemCard, isActive && styles.petItemCardActive]}>
+                      <TouchableOpacity
+                        style={styles.radioBtn}
+                        onPress={() => setActivePetId(pet.id)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Icon
+                          name={isActive ? 'radio-button-on' : 'radio-button-off'}
+                          size={24}
+                          color={isActive ? colors.primary : '#ccc'}
+                        />
+                      </TouchableOpacity>
+
+                      <Icon name="paw" size={22} color={isActive ? colors.primary : '#ccc'} style={{ marginLeft: 8 }} />
+
+                      <View style={styles.petItemInfo}>
+                        <Text style={styles.petNameText}>{pet.name}</Text>
+                        <Text style={styles.petDetailText}>{pet.species} • {pet.breed || 'Raça não definida'}</Text>
+                        {isActive && (
+                          <Text style={styles.activePetBadge}>Ativo no Swipe</Text>
+                        )}
+                      </View>
+
+                      <TouchableOpacity
+                        style={styles.editPetBtn}
+                        onPress={() => {
+                          setShowPets(false);
+                          navigation.navigate('EditPet', { pet });
+                        }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Icon name="create-outline" size={20} color={colors.text} />
+                      </TouchableOpacity>
                     </View>
-                    <Icon name="chevron-forward" size={20} color="#ccc" />
-                  </TouchableOpacity>
-                ))}
-                
-                <TouchableOpacity 
+                  );
+                })}
+
+                <TouchableOpacity
                   style={[styles.primaryButton, { marginTop: 20 }]}
                   onPress={() => {
                     setShowPets(false);
@@ -189,8 +220,8 @@ export default function ProfileScreen() {
                 <Icon name="notifications-outline" size={24} color={colors.text} />
                 <Text style={styles.settingsText}>Notificações</Text>
               </View>
-              <Switch 
-                value={notificationsEnabled} 
+              <Switch
+                value={notificationsEnabled}
                 onValueChange={setNotificationsEnabled}
                 trackColor={{ false: "#767577", true: colors.primary }}
               />
@@ -233,9 +264,36 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#eee' },
   modalTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   modalContent: { padding: 20 },
-  petItemCard: { flexDirection: 'row', alignItems: 'center', padding: 15, backgroundColor: '#fff', borderRadius: 12, marginBottom: 10, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2 },
+  activePetHint: { fontSize: 13, color: colors.inactive, marginBottom: 14, textAlign: 'center' },
+  petItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  petItemCardActive: { borderColor: colors.primary },
+  radioBtn: { padding: 2 },
+  petItemInfo: { marginLeft: 12, flex: 1 },
   petNameText: { fontSize: 16, fontWeight: 'bold', color: colors.text },
-  petDetailText: { fontSize: 12, color: '#999' },
+  petDetailText: { fontSize: 12, color: '#999', marginTop: 2 },
+  activePetBadge: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.primary,
+    marginTop: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  editPetBtn: { padding: 4, marginLeft: 8 },
   settingsOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#eee' },
   settingsOptionLeft: { flexDirection: 'row', alignItems: 'center' },
   settingsText: { fontSize: 16, marginLeft: 15, color: colors.text },
@@ -243,5 +301,5 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: 'center', marginTop: 50 },
   emptyText: { fontSize: 16, color: '#999', textAlign: 'center', marginTop: 15, marginBottom: 30, paddingHorizontal: 40 },
   primaryButton: { backgroundColor: colors.primary, paddingHorizontal: 30, paddingVertical: 15, borderRadius: 25, alignItems: 'center' },
-  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
+  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
 });

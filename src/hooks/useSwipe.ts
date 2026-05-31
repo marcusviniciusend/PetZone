@@ -1,13 +1,16 @@
-import { useEffect } from 'react';
+import { useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { petService } from '../services/petService';
 import { useSwipeStore } from '../stores/swipeStore';
 
 export function useSwipe() {
   const { pets, loading, error, setPets, setLoading, setError, removePet } = useSwipeStore();
 
-  useEffect(() => {
-    loadPets();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadPets();
+    }, []),
+  );
 
   const loadPets = async () => {
     try {

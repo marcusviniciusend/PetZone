@@ -50,7 +50,18 @@ function buildListItems(messages: Message[]): ListItem[] {
   return items;
 }
 
-export default function ChatScreen({ route, navigation }: any) {
+interface ChatScreenProps {
+  route: {
+    params: {
+      matchId: string;
+      otherUserId: string;
+      otherUserName?: string;
+    };
+  };
+  navigation: any; // Ideally use NativeStackNavigationProp
+}
+
+export default function ChatScreen({ route, navigation }: ChatScreenProps) {
   const { matchId, otherUserId, otherUserName } = route.params;
   const { messages, loading, currentUserId, sendMessage } = useChat(matchId, otherUserId);
   const [newMessage, setNewMessage] = useState('');
@@ -60,14 +71,17 @@ export default function ChatScreen({ route, navigation }: any) {
   const listItems = useMemo(() => buildListItems(messages), [messages]);
 
   const handleSend = async () => {
-    if (!newMessage.trim() || sending) return;
+    const trimmedMessage = newMessage.trim();
+    if (!trimmedMessage || sending) return;
+
     setSending(true);
-    const text = newMessage.trim();
     setNewMessage('');
-    const success = await sendMessage(text);
-    if (!success) setNewMessage(text);
+    
+    const success = await sendMessage(trimmedMessage);
+    if (!success) {
+      setNewMessage(trimmedMessage);
+    }
     setSending(false);
-    scrollToBottom();
   };
 
   const scrollToBottom = () => {

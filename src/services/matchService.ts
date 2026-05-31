@@ -1,39 +1,43 @@
 import { supabase } from '../lib/supabase';
 import { MatchedPet } from '../types';
+import { useActivePetStore } from '../stores/activePetStore';
 
 export type { MatchedPet };
 
+async function resolveMyPetId(userId: string): Promise<string | null> {
+  const { activePetId, setActivePetId } = useActivePetStore.getState();
+  if (activePetId) return activePetId;
+
+  const { data: myPets } = await supabase
+    .from('pets')
+    .select('id')
+    .eq('tutor_id', userId)
+    .is('deleted_at', null)
+    .limit(1);
+
+  if (!myPets || myPets.length === 0) return null;
+  setActivePetId(myPets[0].id);
+  return myPets[0].id;
+}
+
 export const matchService = {
-  // 1. O Fluxo do Swipe
   async registerInteraction(targetPetId: string, action: 'like' | 'dislike') {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return { match: false };
 
-      const { data: myPets } = await supabase
-        .from('pets')
-        .select('id')
-        .eq('tutor_id', user.id)
-        .limit(1);
+      const myPetId = await resolveMyPetId(user.id);
+      if (!myPetId) return { match: false, error: 'NO_PET_FOUND' };
 
-      if (!myPets || myPets.length === 0) {
-        return { match: false, error: 'NO_PET_FOUND' };
-      }
-
-      const myPetId = myPets[0].id;
-
-      // Se for dislike, apenas gravamos na tabela de dislikes e retornamos
       if (action === 'dislike') {
         const { error: dislikeError } = await supabase
           .from('dislikes')
           .insert({ admirer_pet_id: myPetId, target_pet_id: targetPetId });
-        
+
         if (dislikeError) console.error('Erro ao salvar dislike:', dislikeError.message);
-        
         return { match: false };
       }
 
-      // Grava o Like
       const { error: insertError } = await supabase
         .from('likes')
         .insert({ admirer_pet_id: myPetId, target_pet_id: targetPetId });
@@ -42,7 +46,6 @@ export const matchService = {
         console.error('Erro ao dar like:', insertError.message);
       }
 
-      // Checa se já havia um like do outro lado
       const { data: matchData } = await supabase
         .from('likes')
         .select('id')
@@ -50,11 +53,7 @@ export const matchService = {
         .eq('target_pet_id', myPetId)
         .maybeSingle();
 
-      if (matchData) {
-        // O trigger SQL cria a linha em `matches` automaticamente
-        return { match: true };
-      }
-
+      if (matchData) return { match: true };
       return { match: false };
 
     } catch (error) {
@@ -63,23 +62,14 @@ export const matchService = {
     }
   },
 
-  // 2. O Motor da Aba de Matches
   async getMyLikedPets(): Promise<MatchedPet[]> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
-      // Descobre quem é o meu pet
-      const { data: myPets } = await supabase
-        .from('pets')
-        .select('id')
-        .eq('tutor_id', user.id)
-        .limit(1);
+      const myPetId = await resolveMyPetId(user.id);
+      if (!myPetId) return [];
 
-      if (!myPets || myPets.length === 0) return [];
-      const myPetId = myPets[0].id;
-
-      // Refactored to fetch matches and pet details in a single query using joins
       const { data, error } = await supabase
         .from('matches')
         .select(`
@@ -92,9 +82,8 @@ export const matchService = {
       if (error) throw error;
       if (!data) return [];
 
-      // Mapeamento e deduplicação para garantir que cada pet apareça apenas uma vez
       const seenPetIds = new Set<string>();
-      const uniqueMatches: MatchedPet[] = [];
+      const uniqueMatches: Omit<MatchedPet, 'unreadCount'>[] = [];
 
       for (const m of data) {
         const p1 = m.pet1 as unknown as MatchedPet;
@@ -102,18 +91,35 @@ export const matchService = {
         if (!p1 || !p2) continue;
 
         const otherPet = p1.id === myPetId ? p2 : p1;
-        
         if (!seenPetIds.has(otherPet.id)) {
           seenPetIds.add(otherPet.id);
           uniqueMatches.push({ ...otherPet, match_id: m.id });
         }
       }
 
-      return uniqueMatches;
+      if (uniqueMatches.length === 0) return [];
+
+      const matchIds = uniqueMatches.map(m => m.match_id);
+      const { data: unreadData } = await supabase
+        .from('messages')
+        .select('match_id')
+        .eq('receiver_id', user.id)
+        .eq('read', false)
+        .in('match_id', matchIds);
+
+      const unreadByMatch = (unreadData || []).reduce<Record<string, number>>((acc, msg) => {
+        acc[msg.match_id] = (acc[msg.match_id] || 0) + 1;
+        return acc;
+      }, {});
+
+      return uniqueMatches.map(m => ({
+        ...m,
+        unreadCount: unreadByMatch[m.match_id] || 0,
+      }));
 
     } catch (error) {
       console.error('Erro ao buscar matches:', error);
       return [];
     }
-  }
+  },
 };

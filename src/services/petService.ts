@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { useActivePetStore } from '../stores/activePetStore';
 
 export const petService = {
   // 1. Cadastrar um novo pet
@@ -84,12 +85,21 @@ export const petService = {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
-      // 1. Descobrir qual o meu pet logado
-      const { data: myPets } = await supabase.from('pets').select('id').eq('tutor_id', user.id).limit(1);
-      if (!myPets || myPets.length === 0) return [];
-      const myPetId = myPets[0].id;
+      const { activePetId, setActivePetId } = useActivePetStore.getState();
+      let myPetId = activePetId;
 
-      // 2. Chamar a função SQL nativa (RPC) que já traz os pets filtrados
+      if (!myPetId) {
+        const { data: myPets } = await supabase
+          .from('pets')
+          .select('id')
+          .eq('tutor_id', user.id)
+          .is('deleted_at', null)
+          .limit(1);
+        if (!myPets || myPets.length === 0) return [];
+        myPetId = myPets[0].id;
+        setActivePetId(myPetId);
+      }
+
       const { data, error } = await supabase.rpc('get_unseen_pets', {
         my_tutor_id: user.id,
         my_pet_uuid: myPetId,

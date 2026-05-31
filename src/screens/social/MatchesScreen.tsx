@@ -3,17 +3,17 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator }
 import { Image } from 'expo-image';
 import { colors } from '../../theme/colors';
 import { useMatches } from '../../hooks/useMatches';
+import { MatchedPet } from '../../types';
 
 export default function MatchesScreen({ navigation }: any) {
   const { matches, loading } = useMatches();
 
-  const handleOpenChat = (match: any) => {
-    // Navegação correta para uma tela aninhada dentro de um Tab.Screen
-    navigation.navigate('Matches', { // Nome da Tab.Screen que contém o MatchesStack
-      screen: 'Chat', // Nome da Stack.Screen dentro do MatchesStack
-      params: { // Parâmetros para a tela de Chat
-        matchId: match.match_id, // Usamos o ID do match definitivo
-        otherUserId: match.tutor_id, // Usamos o ID do tutor do outro pet
+  const handleOpenChat = (match: MatchedPet) => {
+    navigation.navigate('Matches', {
+      screen: 'Chat',
+      params: {
+        matchId: match.match_id,
+        otherUserId: match.tutor_id,
         otherUserName: match.name,
       },
     });
@@ -26,11 +26,10 @@ export default function MatchesScreen({ navigation }: any) {
       </View>
     );
   }
-  
 
-  const renderMatch = ({ item }: { item: any }) => (
-    <TouchableOpacity 
-      style={styles.matchCard} 
+  const renderMatch = ({ item }: { item: MatchedPet }) => (
+    <TouchableOpacity
+      style={styles.matchCard}
       onPress={() => handleOpenChat(item)}
     >
       <Image
@@ -44,7 +43,12 @@ export default function MatchesScreen({ navigation }: any) {
         <Text style={styles.matchName}>{item.name}</Text>
         <Text style={styles.lastMessage}>{item.species} • {item.breed || 'Raça não definida'}</Text>
       </View>
-      <View style={styles.unreadBadge} />
+
+      {item.unreadCount > 0 && (
+        <View style={styles.unreadBadge}>
+          <Text style={styles.unreadBadgeText}>{item.unreadCount}</Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 
@@ -90,7 +94,16 @@ const styles = StyleSheet.create({
   matchInfo: { flex: 1 },
   matchName: { fontSize: 18, fontWeight: 'bold', color: colors.text },
   lastMessage: { fontSize: 14, color: colors.inactive },
-  unreadBadge: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.primary },
+  unreadBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+  },
+  unreadBadgeText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
   emptyContainer: { marginTop: 100, alignItems: 'center' },
-  emptyText: { fontSize: 16, color: colors.inactive }
+  emptyText: { fontSize: 16, color: colors.inactive },
 });

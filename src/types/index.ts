@@ -37,6 +37,7 @@ export interface MatchedPet {
   tutor_id: string;
   match_id: string;
   image_url?: string;
+  unreadCount: number;
 }
 
 export type ServiceResult<T = undefined> =

@@ -1,4 +1,52 @@
 {
-  "name": "PetTinder",
-  "displayName": "PetTinder"
+  "expo": {
+    "name": "PetTinder",
+    "slug": "pettinder",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Permitir que $(PRODUCT_NAME) use sua localização para encontrar pets próximos.",
+          "locationAlwaysPermission": "Permitir que $(PRODUCT_NAME) use sua localização para encontrar pets próximos.",
+          "locationWhenInUsePermission": "Permitir que $(PRODUCT_NAME) use sua localização para encontrar pets próximos.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.pettinder",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Precisamos da sua localização para mostrar pets próximos de você.",
+        "NSLocationAlwaysUsageDescription": "Precisamos da sua localização para mostrar pets próximos de você."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.yourcompany.pettinder",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
 }
