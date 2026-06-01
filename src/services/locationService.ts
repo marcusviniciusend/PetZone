@@ -1,5 +1,7 @@
 import * as Location from 'expo-location';
 import { supabase } from '../lib/supabase';
+import { useActivePetStore } from '../stores/activePetStore';
+import { petService } from './petService';
 
 export interface LocationCoords {
   latitude: number;
@@ -7,20 +9,11 @@ export interface LocationCoords {
 }
 
 class LocationService {
-  /**
-   * Solicita permissão e retorna a localização atual
-   */
   async getCurrentLocation(): Promise<LocationCoords | null> {
     try {
-      // Solicitar permissão
       const { status } = await Location.requestForegroundPermissionsAsync();
-      
-      if (status !== 'granted') {
-        console.log('Permissão de localização negada');
-        return null;
-      }
+      if (status !== 'granted') return null;
 
-      // Pegar localização atual
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
@@ -35,13 +28,9 @@ class LocationService {
     }
   }
 
-  /**
-   * Atualiza a localização do usuário no banco de dados
-   */
   async updateUserLocation(userId: string): Promise<boolean> {
     try {
       const location = await this.getCurrentLocation();
-      
       if (!location) return false;
 
       const { error } = await supabase
@@ -54,8 +43,6 @@ class LocationService {
         .eq('id', userId);
 
       if (error) throw error;
-
-      console.log('Localização atualizada:', location);
       return true;
     } catch (error) {
       console.error('Erro ao atualizar localização:', error);
@@ -63,58 +50,25 @@ class LocationService {
     }
   }
 
-  /**
-   * Calcula distância entre dois pontos em km (fórmula de Haversine)
-   */
-  calculateDistance(
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number
-  ): number {
-    const R = 6371; // Raio da Terra em km
+  calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371;
     const dLat = this.toRad(lat2 - lat1);
     const dLon = this.toRad(lon2 - lon1);
-    
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRad(lat1)) *
-        Math.cos(this.toRad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    
+      Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c;
-    
-    return Math.round(distance * 10) / 10; // Arredondar para 1 casa decimal
+    return Math.round(R * c * 10) / 10;
   }
 
-  /**
-   * Converte graus para radianos
-   */
-  private toRad(degrees: number): number {
-    return degrees * (Math.PI / 180);
-  }
-
-  /**
-   * Formata a distância para exibição
-   */
   formatDistance(distanceKm: number): string {
-    if (distanceKm < 1) {
-      return `${Math.round(distanceKm * 1000)}m de você`;
-    }
+    if (distanceKm < 1) return `${Math.round(distanceKm * 1000)}m de você`;
     return `${distanceKm}km de você`;
   }
 
-  /**
-   * Busca pets próximos (usando SQL com a função de distância)
-   */
-  async getNearbyPets(
-    userId: string,
-    maxDistanceKm: number = 50
-  ): Promise<any[]> {
+  async getNearbyPets(userId: string, maxDistanceKm: number = 50): Promise<any[]> {
     try {
-      // Pegar localização do usuário atual
       const { data: currentUser } = await supabase
         .from('profiles')
         .select('latitude, longitude')
@@ -122,25 +76,30 @@ class LocationService {
         .maybeSingle();
 
       if (!currentUser?.latitude || !currentUser?.longitude) {
-        console.log('Usuário sem localização definida');
-        return [];
+        // Sem localização salva: usa a busca padrão como fallback
+        return petService.getAvailablePets();
       }
 
-      // Buscar pets próximos usando a função SQL
+      const { activePetId } = useActivePetStore.getState();
+
       const { data, error } = await supabase.rpc('get_nearby_pets', {
         user_lat: currentUser.latitude,
         user_lon: currentUser.longitude,
         max_distance: maxDistanceKm,
         current_user_id: userId,
+        my_pet_uuid: activePetId,
       });
 
       if (error) throw error;
-
       return data || [];
     } catch (error) {
       console.error('Erro ao buscar pets próximos:', error);
       return [];
     }
+  }
+
+  private toRad(degrees: number): number {
+    return degrees * (Math.PI / 180);
   }
 }
 

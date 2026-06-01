@@ -1,7 +1,7 @@
 import React, { useRef, useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ActivityIndicator,
-  TouchableOpacity, Modal, Alert,
+  TouchableOpacity, Modal, Alert, Switch,
 } from 'react-native';
 import Swiper from 'react-native-deck-swiper';
 import { useNavigation } from '@react-navigation/native';
@@ -12,8 +12,10 @@ const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: s
 import { moderateScale } from '../../utils/responsive';
 import { useSwipe } from '../../hooks/useSwipe';
 import PetCard from '../../components/PetCard';
+import DistanceFilter from '../../components/DistanceFilter';
 import { MatchModal } from '../../components/MatchModal';
 import { matchService } from '../../services/matchService';
+import { useSwipeStore } from '../../stores/swipeStore';
 import { colors } from '../../theme/colors';
 import { Pet } from '../../types';
 
@@ -32,12 +34,17 @@ function matchesAgeFilter(age: number | undefined, filter: AgeFilter): boolean {
 
 export default function SwipeScreen() {
   const navigation = useNavigation<any>();
-  const { pets, loading, error } = useSwipe();
+  const { pets, loading, error, refresh } = useSwipe();
+  const { maxDistanceKm, setMaxDistance } = useSwipeStore();
   const swiperRef = useRef<any>(null);
   const [matchedPet, setMatchedPet] = useState<Pet | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [speciesFilter, setSpeciesFilter] = useState<SpeciesFilter>('Todos');
   const [ageFilter, setAgeFilter] = useState<AgeFilter>('Todos');
+
+  // Estados pendentes do modal (só aplicam ao fechar)
+  const [pendingDistance, setPendingDistance] = useState(maxDistanceKm ?? 50);
+  const [distanceLimitEnabled, setDistanceLimitEnabled] = useState(maxDistanceKm !== null);
 
   const filteredPets = useMemo(() => {
     return pets.filter(pet => {
@@ -50,7 +57,33 @@ export default function SwipeScreen() {
     });
   }, [pets, speciesFilter, ageFilter]);
 
-  const hasActiveFilter = speciesFilter !== 'Todos' || ageFilter !== 'Todos';
+  const hasActiveFilter =
+    speciesFilter !== 'Todos' || ageFilter !== 'Todos' || maxDistanceKm !== null;
+
+  const openFilters = () => {
+    setPendingDistance(maxDistanceKm ?? 50);
+    setDistanceLimitEnabled(maxDistanceKm !== null);
+    setShowFilters(true);
+  };
+
+  const applyFilters = () => {
+    const newMaxDistance = distanceLimitEnabled ? pendingDistance : null;
+    const distanceChanged = newMaxDistance !== maxDistanceKm;
+    setMaxDistance(newMaxDistance);
+    setShowFilters(false);
+    if (distanceChanged) refresh();
+  };
+
+  const clearAll = () => {
+    setSpeciesFilter('Todos');
+    setAgeFilter('Todos');
+    setDistanceLimitEnabled(false);
+    setPendingDistance(50);
+    const hadDistance = maxDistanceKm !== null;
+    setMaxDistance(null);
+    setShowFilters(false);
+    if (hadDistance) refresh();
+  };
 
   const handleSwipeRight = async (cardIndex: number) => {
     const pet = filteredPets[cardIndex];
@@ -102,7 +135,7 @@ export default function SwipeScreen() {
       <View style={styles.topBar}>
         <TouchableOpacity
           style={[styles.filterButton, hasActiveFilter && styles.filterButtonActive]}
-          onPress={() => setShowFilters(true)}
+          onPress={openFilters}
         >
           <Icon
             name="options-outline"
@@ -123,10 +156,7 @@ export default function SwipeScreen() {
             <>
               <Text style={styles.title}>Nenhum resultado</Text>
               <Text style={styles.emptySubtext}>Tente ajustar os filtros para ver mais pets.</Text>
-              <TouchableOpacity
-                style={styles.clearFiltersBtn}
-                onPress={() => { setSpeciesFilter('Todos'); setAgeFilter('Todos'); }}
-              >
+              <TouchableOpacity style={styles.clearFiltersBtn} onPress={clearAll}>
                 <Text style={styles.clearFiltersBtnText}>Limpar Filtros</Text>
               </TouchableOpacity>
             </>
@@ -136,7 +166,7 @@ export default function SwipeScreen() {
         <>
           <View style={styles.swiperContainer}>
             <Swiper
-              key={`${speciesFilter}-${ageFilter}`}
+              key={`${speciesFilter}-${ageFilter}-${maxDistanceKm}`}
               ref={swiperRef}
               cards={filteredPets}
               renderCard={(card) => <PetCard pet={card} />}
@@ -242,15 +272,34 @@ export default function SwipeScreen() {
               ))}
             </View>
 
-            <TouchableOpacity style={styles.applyBtn} onPress={() => setShowFilters(false)}>
+            <View style={styles.distanceHeader}>
+              <Text style={styles.filterLabel}>Distância Máxima</Text>
+              <View style={styles.distanceToggle}>
+                <Text style={styles.distanceToggleLabel}>
+                  {distanceLimitEnabled ? `${pendingDistance} km` : 'Sem limite'}
+                </Text>
+                <Switch
+                  value={distanceLimitEnabled}
+                  onValueChange={setDistanceLimitEnabled}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor="#fff"
+                />
+              </View>
+            </View>
+
+            {distanceLimitEnabled && (
+              <DistanceFilter
+                value={pendingDistance}
+                onChange={setPendingDistance}
+              />
+            )}
+
+            <TouchableOpacity style={styles.applyBtn} onPress={applyFilters}>
               <Text style={styles.applyBtnText}>Aplicar</Text>
             </TouchableOpacity>
 
             {hasActiveFilter && (
-              <TouchableOpacity
-                style={styles.clearBtn}
-                onPress={() => { setSpeciesFilter('Todos'); setAgeFilter('Todos'); setShowFilters(false); }}
-              >
+              <TouchableOpacity style={styles.clearBtn} onPress={clearAll}>
                 <Text style={styles.clearBtnText}>Limpar Filtros</Text>
               </TouchableOpacity>
             )}
@@ -368,12 +417,20 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   filterChipText: { fontSize: 14, color: colors.text, fontWeight: '500' },
   filterChipTextActive: { color: '#fff' },
+  distanceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  distanceToggle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  distanceToggleLabel: { fontSize: 14, color: colors.text, fontWeight: '500' },
   applyBtn: {
     backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 16,
   },
   applyBtnText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   clearBtn: { borderRadius: 12, paddingVertical: 12, alignItems: 'center', marginTop: 4 },

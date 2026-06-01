@@ -18,6 +18,7 @@ import ProfileScreen from './src/screens/profile/ProfileScreen';
 import AddPetScreen from './src/screens/profile/AddPetScreen';
 import { colors } from './src/theme/colors';
 import { supabase } from './src/lib/supabase';
+import locationService from './src/services/locationService';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -27,7 +28,7 @@ function MatchesStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MatchesList" component={MatchesScreen} />
-      <Stack.Screen name="Chat" component={ChatScreen} />
+      <Stack.Screen name="Chat" component={ChatScreen as any} />
     </Stack.Navigator>
   );
 }
@@ -78,6 +79,9 @@ export default function App() {
     // Fica escutando qualquer mudança de login/logout
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session?.user) {
+        locationService.updateUserLocation(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
