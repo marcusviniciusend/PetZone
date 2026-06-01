@@ -1,25 +1,28 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import _Icon from 'react-native-vector-icons/Ionicons';
 
 const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
 import { colors } from '../../theme/colors';
 import { authService } from '../../services/authService';
+import { LanguageSelector } from '../../components/LanguageSelector';
 
 interface LoginProps {
   onNavigateRegister: () => void;
 }
 
 export default function LoginScreen({ onNavigateRegister }: LoginProps) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true); // <-- Estado do Lembrar de mim
+  const [rememberMe, setRememberMe] = useState(true);
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert("Aviso", "Preencha e-mail e senha para entrar.");
+      Alert.alert(t('common.warning'), t('login.alertEmpty'));
       return;
     }
     setLoading(true);
@@ -27,31 +30,35 @@ export default function LoginScreen({ onNavigateRegister }: LoginProps) {
     setLoading(false);
 
     if (response.success) {
-      Alert.alert("Sucesso!", "Você está logado no Pet Tinder!");
+      Alert.alert(t('common.success'), t('login.alertSuccess'));
     } else {
-      Alert.alert("Erro no Login", response.error);
+      Alert.alert(t('login.alertErrorTitle'), response.error);
     }
   };
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+      <View style={styles.langRow}>
+        <LanguageSelector />
+      </View>
+
       <View style={styles.header}>
-        <Text style={styles.title}>Pet Tinder</Text>
-        <Text style={styles.subtitle}>Encontre o par perfeito para o seu pet</Text>
+        <Text style={styles.title}>{t('login.title')}</Text>
+        <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
       </View>
 
       <View style={styles.form}>
-        <Text style={styles.label}>E-mail</Text>
+        <Text style={styles.label}>{t('login.email')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="seu@email.com"
+          placeholder={t('login.emailPlaceholder')}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
         />
 
-        <Text style={styles.label}>Senha</Text>
+        <Text style={styles.label}>{t('login.password')}</Text>
         <View style={styles.passwordContainer}>
           <TextInput
             style={styles.passwordInput}
@@ -65,19 +72,17 @@ export default function LoginScreen({ onNavigateRegister }: LoginProps) {
           </TouchableOpacity>
         </View>
 
-        {/* Checkbox Lembrar de Mim */}
         <TouchableOpacity style={styles.rememberContainer} onPress={() => setRememberMe(!rememberMe)}>
           <Icon name={rememberMe ? 'checkbox' : 'square-outline'} size={22} color={colors.primary} />
-          <Text style={styles.rememberText}>Lembrar de mim</Text>
+          <Text style={styles.rememberText}>{t('login.rememberMe')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={handleLogin} disabled={loading}>
-          <Text style={styles.buttonText}>{loading ? 'Carregando...' : 'Entrar'}</Text>
+          <Text style={styles.buttonText}>{loading ? t('login.loading') : t('login.enter')}</Text>
         </TouchableOpacity>
 
-        {/* Esse botão agora dispara a navegação em vez de chamar o banco */}
         <TouchableOpacity style={styles.registerButton} onPress={onNavigateRegister}>
-          <Text style={styles.registerText}>Não tem conta? Cadastre-se</Text>
+          <Text style={styles.registerText}>{t('login.noAccount')}</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -86,6 +91,7 @@ export default function LoginScreen({ onNavigateRegister }: LoginProps) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, justifyContent: 'center' },
+  langRow: { position: 'absolute', top: 56, right: 24, flexDirection: 'row' },
   header: { alignItems: 'center', marginBottom: 40 },
   title: { fontSize: 42, fontWeight: 'bold', color: colors.primary },
   subtitle: { fontSize: 16, color: colors.text, opacity: 0.7, marginTop: 5 },
@@ -101,5 +107,5 @@ const styles = StyleSheet.create({
   buttonDisabled: { opacity: 0.7 },
   buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   registerButton: { marginTop: 20, alignItems: 'center', padding: 10 },
-  registerText: { color: colors.primary, fontSize: 14, fontWeight: '600' }
+  registerText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
 });

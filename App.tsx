@@ -1,3 +1,4 @@
+import './src/i18n';
 import EditProfileScreen from './src/screens/profile/EditProfileScreen';
 import EditPetScreen from './src/screens/profile/EditPetScreen';
 import React, { useEffect, useState } from 'react';
