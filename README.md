@@ -1,121 +1,202 @@
-# PetTinder 🐾
+# PetZone
 
-Um aplicativo mobile focado no encontro de pets para acasalamento, desenvolvido como projeto de extensão universitária (iCEV). O objetivo é conectar tutores que buscam o par ideal para seus animais de estimação, facilitando a continuidade da linhagem e o cuidado genético.
+Aplicativo mobile de conexão entre tutores de pets — encontre companheiros para passeios, brincadeiras e muito mais. Funciona como um swipe de cards estilo Tinder, mas para pets e seus donos.
 
----
-
-## Arquitetura
-
-O PetTinder segue uma arquitetura modular em React Native para garantir escalabilidade, com gerenciamento de estado global e tipagem estática rigorosa:
-
-```text
-src/
-├── hooks/
-│   ├── useMatches.ts     # Hook para lógica e carregamento da lista de matches
-│   └── useSwipe.ts       # Hook para gerenciamento do baralho de pets e loading
-├── lib/
-│   └── supabase.ts       # Configuração e conexão com o cliente Supabase
-├── screens/
-│   ├── MatchesScreen.tsx # Listagem de conexões estabelecidas e chat
-│   ├── ProfileScreen.tsx # Gerenciamento das informações do pet e do tutor
-│   └── SwipeScreen.tsx   # Tela de descoberta com mecânica de Match/Pass
-├── services/
-│   ├── chatService.ts    # Comunicação com o banco para troca de mensagens
-│   ├── matchService.ts   # Persistência de interações (likes/dislikes)
-│   └── petService.ts     # Serviço de consulta ao catálogo de pets
-├── stores/
-│   ├── authStore.ts      # Estado global de autenticação do usuário
-│   ├── chatStore.ts      # Estado global das conversas ativas
-│   └── swipeStore.ts     # Estado global das métricas e fila de swipe
-├── types/
-│   └── env.d.ts          # Definições de tipagem para variáveis de ambiente
-└── utils/
-    ├── lgpd.ts           # Tratamento de dados e consentimento (Lei Geral de Proteção de Dados)
-    └── notifications.ts  # Configuração e disparo de notificações push
-```
+Desenvolvido com React Native + Expo, backend Supabase e suporte a múltiplos idiomas (Português e Inglês).
 
 ---
- 
-## Tech Stack
- 
-| Responsabilidade | Tecnologia / Pacote |
-|---|---|
-| Framework UI | React Native (TypeScript) |
-| Identidade visual | Tema PetTinder (`#FA2A55`) |
-| Navegação | `@react-navigation/bottom-tabs` |
-| Mecânica de swipe | `react-native-deck-swiper` |
-| Estado global | Zustand / Context API (via `stores/`) |
-| Backend / Database | Supabase (PostgreSQL) |
-| Configuração | `react-native-dotenv` |
- 
----
- 
+
 ## Funcionalidades
 
-### Swipe Screen
-* Feed de cards de pets para deslizar (like / dislike)
-* Overlay visual de ♥ e ✕ durante o gesto
-* Detecção automática de match mútuo
-* Modal de celebração ao confirmar um match
+- **Swipe de pets** — deslize para curtir ou ignorar pets próximos
+- **Filtros de busca** — filtre por espécie, raça, idade e distância (geolocalização)
+- **Matches** — quando dois tutores curtem os pets um do outro, um match é criado
+- **Chat em tempo real** — converse com tutores dos seus matches via Supabase Realtime
+- **Perfil do tutor** — nome, bio e foto
+- **Cadastro de pets** — múltiplos pets por tutor, com foto, espécie, raça, idade e bio
+- **Carteirinha de vacinação** — upload de documento e selo de pet verificado
+- **Internacionalização** — interface em Português (pt-BR) e Inglês (en-US) com persistência da escolha
+- **LGPD** — consentimento, exportação e exclusão de dados
 
-### Matches Screen
-* Lista completa de matches realizados
-* Foto, nome e raça do pet parceiro
-* Botão de acesso direto ao chat de cada match
+---
 
-### Profile Screen
-* Cadastro e edição de perfil do tutor
-* Registro de pets com foto, raça, idade e bio
-* Fluxo de consentimento LGPD no onboarding
-* Opção de exclusão de conta (art. 18 LGPD)
+## Stack Tecnológica
 
-### Chat
-* Mensagens em tempo real via Supabase Realtime
-* Histórico persistido por conversa
-* Indicador de mensagem lida
+| Camada | Tecnologia |
+|---|---|
+| Mobile | React Native 0.79 + Expo 53 |
+| Linguagem | TypeScript 5.8 |
+| Navegação | React Navigation 6 (stack + bottom tabs) |
+| Estado global | Zustand 5 |
+| Backend / DB | Supabase (PostgreSQL + Auth + Storage + Realtime) |
+| Internacionalização | i18next + react-i18next |
+| Ícones | react-native-vector-icons (Ionicons + MaterialCommunityIcons) |
+| Imagens | expo-image, expo-image-picker |
+| Geolocalização | expo-location |
+| Persistência local | AsyncStorage |
 
 ---
 
 ## Pré-requisitos
- 
-- Node.js 18+
-- Expo CLI
-- Conta no [Supabase](https://supabase.com)
-- Android Studio ou Xcode (para emulador)
+
+Antes de começar, certifique-se de ter instalado:
+
+- [Node.js](https://nodejs.org/) **>= 20.0.0**
+- [npm](https://www.npmjs.com/) ou [yarn](https://yarnpkg.com/)
+- [Expo Go](https://expo.dev/client) no dispositivo físico **ou** um emulador Android/iOS configurado
+- Uma conta no [Supabase](https://supabase.com/) com projeto criado
 
 ---
 
-## Getting Started
- 
+## Instalação
+
+### 1. Clone o repositório
+
 ```bash
-# 1. Clone o repositório
-git clone https://github.com/marcusviniciusend/PetTinder
-cd pettinder
- 
-# 2. Instale as dependências
+git clone https://github.com/marcusviniciusend/PetTinder.git
+cd PetTinder
+```
+
+### 2. Instale as dependências
+
+```bash
 npm install
- 
-# 3. Configure as variáveis de ambiente
-cp .env.example .env
-# Preencha SUPABASE_URL e SUPABASE_ANON_KEY no .env
- 
-# 4. Execute o app
+```
+
+### 3. Configure as variáveis de ambiente
+
+Crie um arquivo `.env` na raiz do projeto com as credenciais do seu projeto Supabase:
+
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxxxxxxxxxx.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+> **Onde encontrar essas chaves:**
+> Acesse seu projeto no [Supabase Dashboard](https://supabase.com/dashboard) → **Settings** → **API**.
+> Copie a **Project URL** e a **anon/public key**.
+
+---
+
+## Execução
+
+### Expo Go (recomendado para desenvolvimento)
+
+```bash
 npx expo start
 ```
- 
-Para rodar diretamente no emulador Android:
- 
+
+Após iniciar, escaneie o QR Code com o app **Expo Go** no seu celular (Android ou iOS).
+
+### Android (emulador ou dispositivo USB)
+
 ```bash
+npm run android
+# ou
 npx expo run:android
 ```
- 
+
+### iOS (apenas macOS, requer Xcode)
+
+```bash
+npm run ios
+# ou
+npx expo run:ios
+```
+
+---
+
+## Scripts disponíveis
+
+| Comando | Descrição |
+|---|---|
+| `npm start` | Inicia o Metro Bundler |
+| `npm run android` | Builda e executa no Android |
+| `npm run ios` | Builda e executa no iOS |
+| `npm run lint` | Executa o ESLint |
+| `npm test` | Executa os testes com Jest |
+
+---
+
+## Estrutura do Projeto
+
+```
+petzone/
+├── assets/                    # Ícones e splash screen
+├── src/
+│   ├── components/            # Componentes reutilizáveis
+│   │   ├── CustomInput.tsx    # Input com estados visuais (default/focus/error/success)
+│   │   ├── PetCard.tsx        # Card de pet para o swipe
+│   │   ├── MatchModal.tsx     # Modal de novo match
+│   │   ├── ChatBubble.tsx     # Bolha de mensagem
+│   │   ├── DistanceFilter.tsx
+│   │   ├── LanguageSelector.tsx
+│   │   └── LGPDConsent.tsx
+│   ├── constants/
+│   │   └── petSpecies.ts      # Lista de espécies suportadas
+│   ├── hooks/
+│   │   ├── useSwipe.ts
+│   │   ├── useMatches.ts
+│   │   └── useChat.ts
+│   ├── i18n/                  # Internacionalização
+│   │   ├── index.ts
+│   │   ├── pt-BR.ts
+│   │   └── en-US.ts
+│   ├── lib/
+│   │   └── supabase.ts        # Cliente Supabase
+│   ├── screens/
+│   │   ├── auth/
+│   │   │   ├── LoginScreen.tsx
+│   │   │   └── RegisterScreen.tsx
+│   │   ├── profile/
+│   │   │   ├── ProfileScreen.tsx
+│   │   │   ├── EditProfileScreen.tsx
+│   │   │   ├── AddPetScreen.tsx
+│   │   │   └── EditPetScreen.tsx
+│   │   └── social/
+│   │       ├── SwipeScreen.tsx
+│   │       ├── MatchesScreen.tsx
+│   │       └── ChatScreen.tsx
+│   ├── services/              # Camada de acesso ao Supabase
+│   │   ├── authService.ts
+│   │   ├── chatService.ts
+│   │   ├── imageService.ts
+│   │   ├── locationService.ts
+│   │   ├── matchService.ts
+│   │   ├── petService.ts
+│   │   └── profileService.ts
+│   ├── stores/                # Estado global (Zustand)
+│   │   ├── authStore.ts
+│   │   ├── activePetStore.ts
+│   │   ├── chatStore.ts
+│   │   └── swipeStore.ts
+│   ├── theme/
+│   │   └── colors.ts
+│   ├── types/
+│   │   └── env.d.ts
+│   └── utils/
+│       ├── lgpd.ts
+│       ├── notifications.ts
+│       └── responsive.ts
+├── App.tsx                    # Raiz da aplicação e navegação
+├── app.json                   # Configuração Expo
+├── package.json
+└── tsconfig.json
+```
+
+---
+
+## Variáveis de Ambiente
+
+| Variável | Descrição |
+|---|---|
+| `EXPO_PUBLIC_SUPABASE_URL` | URL do projeto Supabase |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Chave pública (anon) do Supabase |
+
+> O arquivo `.env` nunca deve ser commitado. Ele já está listado no `.gitignore`.
+
 ---
 
 ## Licença
- 
-Este projeto foi desenvolvido como projeto de extensão universitária no **iCEV**
 
----
- 
-> Desenvolvido com 🐾 para conectar tutores e seus pets.
- 
+Este projeto foi desenvolvido como projeto de extensão universitária no **iCEV**.
