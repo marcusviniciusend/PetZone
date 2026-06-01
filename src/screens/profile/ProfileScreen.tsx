@@ -9,6 +9,7 @@ import { useActivePetStore } from '../../stores/activePetStore';
 import { Profile, Pet } from '../../types';
 import { colors } from '../../theme/colors';
 import { LanguageSelector } from '../../components/LanguageSelector';
+import { exportUserData, deleteUserData } from '../../utils/lgpd';
 import _Icon from 'react-native-vector-icons/Ionicons';
 
 const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
@@ -52,8 +53,13 @@ export default function ProfileScreen() {
     await supabase.auth.signOut();
   };
 
-  const handleExportData = () => {
-    Alert.alert(t('settings.exportAlertTitle'), t('settings.exportAlert'));
+  const handleExportData = async () => {
+    try {
+      const json = await exportUserData();
+      Alert.alert(t('settings.exportAlertTitle'), json, [{ text: 'OK' }]);
+    } catch {
+      Alert.alert(t('common.error'), 'Não foi possível exportar os dados.');
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -62,7 +68,16 @@ export default function ProfileScreen() {
       t('settings.deleteConfirmMsg'),
       [
         { text: t('common.cancel'), style: 'cancel' },
-        { text: t('settings.deleteConfirmBtn'), style: 'destructive', onPress: () => Alert.alert(t('common.success')) },
+        {
+          text: t('settings.deleteConfirmBtn'),
+          style: 'destructive',
+          onPress: async () => {
+            const result = await deleteUserData();
+            if (!result.success) {
+              Alert.alert(t('common.error'), result.error);
+            }
+          },
+        },
       ]
     );
   };

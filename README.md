@@ -53,8 +53,8 @@ Antes de começar, certifique-se de ter instalado:
 ### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/marcusviniciusend/PetTinder.git
-cd PetTinder
+git clone https://github.com/marcusviniciusend/PetZone.git
+cd PetZone
 ```
 
 ### 2. Instale as dependências
@@ -68,8 +68,8 @@ npm install
 Crie um arquivo `.env` na raiz do projeto com as credenciais do seu projeto Supabase:
 
 ```env
-EXPO_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxxxxxxxxxx.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_URL=https://xxxxxxxxxxxxxxxxxxxx.supabase.co
+SUPABASE_ANON_KEY=your_anon_key_here
 ```
 
 > **Onde encontrar essas chaves:**
@@ -190,8 +190,8 @@ petzone/
 
 | Variável | Descrição |
 |---|---|
-| `EXPO_PUBLIC_SUPABASE_URL` | URL do projeto Supabase |
-| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Chave pública (anon) do Supabase |
+| `SUPABASE_URL` | URL do projeto Supabase |
+| `SUPABASE_ANON_KEY` | Chave pública (anon) do Supabase |
 
 > O arquivo `.env` nunca deve ser commitado. Ele já está listado no `.gitignore`.
 
