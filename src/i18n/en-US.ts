@@ -1,5 +1,19 @@
 export default {
   translation: {
+    appName: 'PetZone',
+    register: {
+      title: 'Create Account',
+      subtitle: 'Join {{appName}}!',
+      nameLabel: "Tutor's Name",
+      namePlaceholder: 'What should we call you?',
+      passwordPlaceholder: 'Minimum 6 characters',
+      creating: 'Creating...',
+      submit: 'Sign Up',
+      alertEmpty: 'Please fill in all fields to create your account.',
+      alertSuccessTitle: 'Welcome!',
+      alertSuccessMsg: 'Your account was created successfully.',
+      alertErrorTitle: 'Registration Error',
+    },
     login: {
       title: 'Pet Tinder',
       subtitle: 'Find the perfect match for your pet',

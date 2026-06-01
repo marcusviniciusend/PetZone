@@ -43,7 +43,7 @@ export default function LoginScreen({ onNavigateRegister }: LoginProps) {
       </View>
 
       <View style={styles.header}>
-        <Text style={styles.title}>{t('login.title')}</Text>
+        <Text style={styles.title}>{t('appName')}</Text>
         <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
       </View>
 

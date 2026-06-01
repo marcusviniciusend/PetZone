@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import _Icon from 'react-native-vector-icons/Ionicons';
 
 const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
 import { colors } from '../../theme/colors';
 import { authService } from '../../services/authService';
+import { LanguageSelector } from '../../components/LanguageSelector';
 
 interface RegisterProps {
   onNavigateLogin: () => void;
 }
 
 export default function RegisterScreen({ onNavigateLogin }: RegisterProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,20 +22,19 @@ export default function RegisterScreen({ onNavigateLogin }: RegisterProps) {
 
   const handleSignUp = async () => {
     if (!name || !email || !password) {
-      Alert.alert("Aviso", "Preencha todos os campos para criar sua conta.");
+      Alert.alert(t('common.warning'), t('register.alertEmpty'));
       return;
     }
 
     setLoading(true);
-    // Adicionamos a variável "name" aqui na chamada da função:
     const response = await authService.signUp(email, password, name);
     setLoading(false);
 
     if (response.success) {
-      Alert.alert("Bem-vindo!", "Sua conta foi criada com sucesso.");
-      onNavigateLogin(); // Volta para a tela de login automaticamente
+      Alert.alert(t('register.alertSuccessTitle'), t('register.alertSuccessMsg'));
+      onNavigateLogin();
     } else {
-      Alert.alert("Erro no Cadastro", response.error);
+      Alert.alert(t('register.alertErrorTitle'), response.error);
     }
   };
 
@@ -42,35 +44,39 @@ export default function RegisterScreen({ onNavigateLogin }: RegisterProps) {
         <Icon name="arrow-back" size={28} color={colors.primary} />
       </TouchableOpacity>
 
+      <View style={styles.langRow}>
+        <LanguageSelector />
+      </View>
+
       <View style={styles.header}>
-        <Text style={styles.title}>Criar Conta</Text>
-        <Text style={styles.subtitle}>Junte-se ao Pet Tinder!</Text>
+        <Text style={styles.title}>{t('register.title')}</Text>
+        <Text style={styles.subtitle}>{t('register.subtitle', { appName: t('appName') })}</Text>
       </View>
 
       <View style={styles.form}>
-        <Text style={styles.label}>Nome do Tutor</Text>
+        <Text style={styles.label}>{t('register.nameLabel')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="Como quer ser chamado?"
+          placeholder={t('register.namePlaceholder')}
           value={name}
           onChangeText={setName}
         />
 
-        <Text style={styles.label}>E-mail</Text>
+        <Text style={styles.label}>{t('login.email')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="seu@email.com"
+          placeholder={t('login.emailPlaceholder')}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
         />
 
-        <Text style={styles.label}>Senha</Text>
+        <Text style={styles.label}>{t('login.password')}</Text>
         <View style={styles.passwordContainer}>
           <TextInput
             style={styles.passwordInput}
-            placeholder="Mínimo 6 caracteres"
+            placeholder={t('register.passwordPlaceholder')}
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
@@ -80,12 +86,12 @@ export default function RegisterScreen({ onNavigateLogin }: RegisterProps) {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity 
-          style={[styles.button, loading && styles.buttonDisabled]} 
+        <TouchableOpacity
+          style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleSignUp}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>{loading ? 'Criando...' : 'Cadastrar'}</Text>
+          <Text style={styles.buttonText}>{loading ? t('register.creating') : t('register.submit')}</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -95,6 +101,7 @@ export default function RegisterScreen({ onNavigateLogin }: RegisterProps) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, justifyContent: 'center' },
   backButton: { position: 'absolute', top: 50, left: 20, zIndex: 10 },
+  langRow: { position: 'absolute', top: 50, right: 20 },
   header: { alignItems: 'center', marginBottom: 40 },
   title: { fontSize: 36, fontWeight: 'bold', color: colors.primary },
   subtitle: { fontSize: 16, color: colors.text, opacity: 0.7, marginTop: 5 },
