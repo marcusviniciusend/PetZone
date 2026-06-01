@@ -1,9 +1,10 @@
-//card do pet que aparece na tela
-
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { moderateScale } from '../utils/responsive'; // Importe o utilitário
+import _Icon from 'react-native-vector-icons/Ionicons';
+import { moderateScale } from '../utils/responsive';
+
+const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
 
 // Pegando a largura e altura da tela do celular dinamicamente
 const { width, height } = Dimensions.get('window');
@@ -17,6 +18,7 @@ interface PetCardProps {
     age?: number;
     bio?: string;
     image_url?: string;
+    vaccine_doc_url?: string | null;
   };
 }
 
@@ -40,6 +42,11 @@ export default function PetCard({ pet }: PetCardProps) {
           <View style={styles.row}>
             <Text style={styles.name}>{pet.name}, {pet.age}</Text>
             <View style={styles.onlineBadge} />
+            {pet.vaccine_doc_url ? (
+              <View style={styles.verifiedBadge}>
+                <Icon name="shield-checkmark" size={moderateScale(16)} color="#fff" />
+              </View>
+            ) : null}
           </View>
           <Text style={styles.breed}>{pet.breed}</Text>
           {pet.bio && (
@@ -103,6 +110,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CD964',
     marginLeft: moderateScale(10),
     borderWidth: moderateScale(2),
+    borderColor: '#fff',
+  },
+  verifiedBadge: {
+    marginLeft: moderateScale(8),
+    width: moderateScale(26),
+    height: moderateScale(26),
+    borderRadius: moderateScale(13),
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
     borderColor: '#fff',
   },
   breed: {

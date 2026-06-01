@@ -3,6 +3,7 @@ import { decode } from 'base64-arraybuffer';
 import { supabase } from '../lib/supabase';
 
 const BUCKET = 'pet-photos';
+const VACCINE_BUCKET = 'vaccine-docs';
 
 export type SelectImageResult =
   | { type: 'success'; uri: string; base64: string }
@@ -53,6 +54,27 @@ export const imageService = {
       return { type: 'success', url: data.publicUrl };
     } catch {
       return { type: 'error', error: 'Falha inesperada ao enviar a foto.' };
+    }
+  },
+
+  async uploadVaccinePhoto(base64: string): Promise<UploadResult> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { type: 'error', error: 'Usuário não autenticado.' };
+
+      const filePath = `${user.id}/${Date.now()}.jpg`;
+      const arrayBuffer = decode(base64);
+
+      const { error: uploadError } = await supabase.storage
+        .from(VACCINE_BUCKET)
+        .upload(filePath, arrayBuffer, { contentType: 'image/jpeg', upsert: false });
+
+      if (uploadError) return { type: 'error', error: uploadError.message };
+
+      const { data } = supabase.storage.from(VACCINE_BUCKET).getPublicUrl(filePath);
+      return { type: 'success', url: data.publicUrl };
+    } catch {
+      return { type: 'error', error: 'Falha inesperada ao enviar o documento.' };
     }
   },
 };

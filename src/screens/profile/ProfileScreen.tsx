@@ -1,17 +1,20 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Modal, Switch, ScrollView } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { petService } from '../../services/petService';
 import { profileService } from '../../services/profileService';
 import { useActivePetStore } from '../../stores/activePetStore';
 import { Profile, Pet } from '../../types';
 import { colors } from '../../theme/colors';
+import { LanguageSelector } from '../../components/LanguageSelector';
 import _Icon from 'react-native-vector-icons/Ionicons';
 
 const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -50,16 +53,16 @@ export default function ProfileScreen() {
   };
 
   const handleExportData = () => {
-    Alert.alert("LGPD - Exportação", "Um arquivo contendo seus dados será enviado para o seu e-mail de cadastro em até 24 horas.");
+    Alert.alert(t('settings.exportAlertTitle'), t('settings.exportAlert'));
   };
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      "Excluir Conta",
-      "Tem certeza que deseja excluir sua conta e todos os dados dos seus pets permanentemente?",
+      t('settings.deleteConfirmTitle'),
+      t('settings.deleteConfirmMsg'),
       [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Excluir", style: "destructive", onPress: () => Alert.alert("Conta excluída!") }
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('settings.deleteConfirmBtn'), style: 'destructive', onPress: () => Alert.alert(t('common.success')) },
       ]
     );
   };
@@ -157,7 +160,12 @@ export default function ProfileScreen() {
                       <Icon name="paw" size={22} color={isActive ? colors.primary : '#ccc'} style={{ marginLeft: 8 }} />
 
                       <View style={styles.petItemInfo}>
-                        <Text style={styles.petNameText}>{pet.name}</Text>
+                        <View style={styles.petNameRow}>
+                          <Text style={styles.petNameText}>{pet.name}</Text>
+                          {pet.vaccine_doc_url ? (
+                            <Icon name="shield-checkmark" size={16} color="#007AFF" style={{ marginLeft: 6 }} />
+                          ) : null}
+                        </View>
                         <Text style={styles.petDetailText}>{pet.species} • {pet.breed || 'Raça não definida'}</Text>
                         {isActive && (
                           <Text style={styles.activePetBadge}>Ativo no Swipe</Text>
@@ -197,20 +205,19 @@ export default function ProfileScreen() {
       <Modal visible={showSettings} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Configurações</Text>
+            <Text style={styles.modalTitle}>{t('settings.title')}</Text>
             <TouchableOpacity onPress={() => setShowSettings(false)}>
               <Icon name="close" size={28} color={colors.text} />
             </TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={styles.modalContent}>
-            <TouchableOpacity style={styles.settingsOption} onPress={() => {
-            setShowSettings(false);
-            navigation.navigate('EditProfile');
-          }}
-        >
+            <TouchableOpacity
+              style={styles.settingsOption}
+              onPress={() => { setShowSettings(false); navigation.navigate('EditProfile'); }}
+            >
               <View style={styles.settingsOptionLeft}>
                 <Icon name="create-outline" size={24} color={colors.text} />
-                <Text style={styles.settingsText}>Editar Perfil</Text>
+                <Text style={styles.settingsText}>{t('settings.editProfile')}</Text>
               </View>
               <Icon name="chevron-forward" size={20} color="#ccc" />
             </TouchableOpacity>
@@ -218,27 +225,35 @@ export default function ProfileScreen() {
             <View style={styles.settingsOption}>
               <View style={styles.settingsOptionLeft}>
                 <Icon name="notifications-outline" size={24} color={colors.text} />
-                <Text style={styles.settingsText}>Notificações</Text>
+                <Text style={styles.settingsText}>{t('settings.notifications')}</Text>
               </View>
               <Switch
                 value={notificationsEnabled}
                 onValueChange={setNotificationsEnabled}
-                trackColor={{ false: "#767577", true: colors.primary }}
+                trackColor={{ false: '#767577', true: colors.primary }}
               />
             </View>
 
-            <Text style={styles.sectionTitle}>Privacidade (LGPD)</Text>
+            <View style={styles.settingsOption}>
+              <View style={styles.settingsOptionLeft}>
+                <Icon name="language-outline" size={24} color={colors.text} />
+                <Text style={styles.settingsText}>{t('settings.languageTitle')}</Text>
+              </View>
+              <LanguageSelector />
+            </View>
+
+            <Text style={styles.sectionTitle}>{t('settings.privacyTitle')}</Text>
             <TouchableOpacity style={styles.settingsOption} onPress={handleExportData}>
               <View style={styles.settingsOptionLeft}>
                 <Icon name="download-outline" size={24} color={colors.text} />
-                <Text style={styles.settingsText}>Exportar meus dados</Text>
+                <Text style={styles.settingsText}>{t('settings.exportData')}</Text>
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.settingsOption} onPress={handleDeleteAccount}>
               <View style={styles.settingsOptionLeft}>
                 <Icon name="trash-outline" size={24} color="#ff4444" />
-                <Text style={[styles.settingsText, { color: '#ff4444' }]}>Excluir Conta</Text>
+                <Text style={[styles.settingsText, { color: '#ff4444' }]}>{t('settings.deleteAccount')}</Text>
               </View>
             </TouchableOpacity>
           </ScrollView>
@@ -283,6 +298,7 @@ const styles = StyleSheet.create({
   petItemCardActive: { borderColor: colors.primary },
   radioBtn: { padding: 2 },
   petItemInfo: { marginLeft: 12, flex: 1 },
+  petNameRow: { flexDirection: 'row', alignItems: 'center' },
   petNameText: { fontSize: 16, fontWeight: 'bold', color: colors.text },
   petDetailText: { fontSize: 12, color: '#999', marginTop: 2 },
   activePetBadge: {

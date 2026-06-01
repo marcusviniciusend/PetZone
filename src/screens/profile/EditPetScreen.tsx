@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { useTranslation } from 'react-i18next';
 import { petService } from '../../services/petService';
 import { imageService } from '../../services/imageService';
 import { colors } from '../../theme/colors';
@@ -26,17 +27,31 @@ type Pet = {
   age: number;
   bio: string;
   image_url?: string;
+  vaccine_doc_url?: string | null;
 };
 
 type NewImage = { uri: string; base64: string };
 
 export default function EditPetScreen({ navigation, route }: any) {
+  const { t } = useTranslation();
   const pet: Pet = route.params.pet;
 
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [newImage, setNewImage] = useState<NewImage | null>(null);
+  const [newVaccineImage, setNewVaccineImage] = useState<NewImage | null>(null);
   const [speciesSuggestions, setSpeciesSuggestions] = useState<string[]>([]);
+
+  const [formData, setFormData] = useState({
+    name: pet.name,
+    species: pet.species,
+    breed: pet.breed || '',
+    age: pet.age ? String(pet.age) : '',
+    bio: pet.bio || '',
+  });
+
+  const currentImageUri = newImage?.uri ?? pet.image_url;
+  const hasVaccineDoc = !!(newVaccineImage || pet.vaccine_doc_url);
 
   const handleSpeciesChange = (text: string) => {
     setFormData({ ...formData, species: text });
@@ -51,23 +66,11 @@ export default function EditPetScreen({ navigation, route }: any) {
     setFormData({ ...formData, species });
     setSpeciesSuggestions([]);
   };
-  const [formData, setFormData] = useState({
-    name: pet.name,
-    species: pet.species,
-    breed: pet.breed || '',
-    age: pet.age ? String(pet.age) : '',
-    bio: pet.bio || '',
-  });
-
-  const currentImageUri = newImage?.uri ?? pet.image_url;
 
   const handlePickImage = async () => {
     const result = await imageService.selectImage();
     if (result.type === 'permission_denied') {
-      Alert.alert(
-        'Permissão necessária',
-        'Habilite o acesso à galeria nas configurações do celular.'
-      );
+      Alert.alert(t('common.warning'), 'Habilite o acesso à galeria nas configurações do celular.');
       return;
     }
     if (result.type === 'success') {
@@ -75,24 +78,42 @@ export default function EditPetScreen({ navigation, route }: any) {
     }
   };
 
+  const handlePickVaccine = async () => {
+    const result = await imageService.selectImage();
+    if (result.type === 'permission_denied') {
+      Alert.alert(t('common.warning'), 'Habilite o acesso à galeria nas configurações do celular.');
+      return;
+    }
+    if (result.type === 'success') {
+      setNewVaccineImage({ uri: result.uri, base64: result.base64 });
+    }
+  };
+
   const handleSave = async () => {
     if (!formData.name || !formData.species) {
-      Alert.alert('Atenção', 'O nome e a espécie do pet são obrigatórios.');
+      Alert.alert(t('common.warning'), 'O nome e a espécie do pet são obrigatórios.');
       return;
     }
 
     setLoading(true);
 
     let imageUrl = pet.image_url;
-
     if (newImage) {
       const uploadResult = await imageService.uploadPetPhoto(newImage.base64);
       if (uploadResult.type === 'error') {
         setLoading(false);
-        Alert.alert('Erro ao enviar foto', uploadResult.error);
+        Alert.alert(t('common.error'), uploadResult.error);
         return;
       }
       imageUrl = uploadResult.url;
+    }
+
+    let vaccineDocUrl = pet.vaccine_doc_url;
+    if (newVaccineImage) {
+      const vaccineResult = await imageService.uploadVaccinePhoto(newVaccineImage.base64);
+      if (vaccineResult.type === 'success') {
+        vaccineDocUrl = vaccineResult.url;
+      }
     }
 
     const response = await petService.updatePet(pet.id, {
@@ -102,15 +123,16 @@ export default function EditPetScreen({ navigation, route }: any) {
       age: parseInt(formData.age) || 0,
       bio: formData.bio,
       image_url: imageUrl,
+      vaccine_doc_url: vaccineDocUrl,
     });
 
     setLoading(false);
 
     if (response.success) {
-      Alert.alert('Sucesso!', 'As informações do pet foram atualizadas.');
+      Alert.alert(t('common.success'), 'As informações do pet foram atualizadas.');
       navigation.goBack();
     } else {
-      Alert.alert('Erro', response.error || 'Não foi possível atualizar o pet.');
+      Alert.alert(t('common.error'), response.error || 'Não foi possível atualizar o pet.');
     }
   };
 
@@ -119,19 +141,18 @@ export default function EditPetScreen({ navigation, route }: any) {
       `Excluir ${pet.name}?`,
       'Esta ação é permanente e não pode ser desfeita.',
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Excluir',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             setDeleting(true);
             const response = await petService.deletePet(pet.id);
             setDeleting(false);
-
             if (response.success) {
               navigation.goBack();
             } else {
-              Alert.alert('Erro', response.error || 'Não foi possível excluir o pet.');
+              Alert.alert(t('common.error'), response.error || 'Não foi possível excluir o pet.');
             }
           },
         },
@@ -223,6 +244,32 @@ export default function EditPetScreen({ navigation, route }: any) {
           onChangeText={(text) => setFormData({ ...formData, bio: text })}
         />
 
+        {/* Carteira de Vacinação */}
+        <View style={styles.vaccineSectionHeader}>
+          <Icon name="shield-checkmark-outline" size={20} color="#007AFF" />
+          <Text style={[styles.label, styles.vaccineLabel]}>{t('pets.vaccine')}</Text>
+        </View>
+        <TouchableOpacity style={styles.vaccinePicker} onPress={handlePickVaccine}>
+          {hasVaccineDoc ? (
+            <View style={styles.vaccineSelected}>
+              <Icon name="checkmark-circle" size={22} color="#007AFF" />
+              <Text style={styles.vaccineSelectedText}>
+                {newVaccineImage ? t('pets.vaccineSelected') : 'Carteirinha já anexada ✓'}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.vaccineEmpty}>
+              <Icon name="document-attach-outline" size={28} color="#007AFF" />
+              <Text style={styles.vaccineHintText}>{t('pets.vaccineHint')}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        {hasVaccineDoc && (
+          <TouchableOpacity onPress={handlePickVaccine} style={styles.changePhotoLink}>
+            <Text style={[styles.changePhotoText, { color: '#007AFF' }]}>{t('pets.vaccineChange')}</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity
           style={styles.saveButton}
           onPress={handleSave}
@@ -300,6 +347,21 @@ const styles = StyleSheet.create({
   imagePlaceholderText: { color: colors.primary, fontSize: 14, fontWeight: '500' },
   changePhotoLink: { alignItems: 'center', marginTop: 8 },
   changePhotoText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+  vaccineSectionHeader: { flexDirection: 'row', alignItems: 'center', marginTop: 15, gap: 6, marginBottom: 8 },
+  vaccineLabel: { marginTop: 0, marginBottom: 0, color: '#007AFF' },
+  vaccinePicker: {
+    borderWidth: 1.5,
+    borderColor: '#007AFF',
+    borderStyle: 'dashed',
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#F0F6FF',
+    padding: 16,
+  },
+  vaccineEmpty: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  vaccineSelected: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  vaccineHintText: { fontSize: 14, color: '#007AFF', flex: 1 },
+  vaccineSelectedText: { fontSize: 14, color: '#007AFF', fontWeight: '600' },
   saveButton: {
     backgroundColor: colors.primary,
     padding: 16,

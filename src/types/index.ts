@@ -7,6 +7,7 @@ export interface Pet {
   age?: number;
   bio?: string;
   image_url?: string;
+  vaccine_doc_url?: string | null;
   created_at?: string;
   deleted_at?: string | null;
 }

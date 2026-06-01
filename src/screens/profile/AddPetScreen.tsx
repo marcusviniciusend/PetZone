@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { useTranslation } from 'react-i18next';
 import { petService } from '../../services/petService';
 import { imageService } from '../../services/imageService';
 import { colors } from '../../theme/colors';
@@ -21,8 +22,10 @@ const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: s
 type SelectedImage = { uri: string; base64: string };
 
 export default function AddPetScreen({ navigation }: any) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<SelectedImage | null>(null);
+  const [vaccineImage, setVaccineImage] = useState<SelectedImage | null>(null);
   const [speciesSuggestions, setSpeciesSuggestions] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: '',
@@ -48,27 +51,33 @@ export default function AddPetScreen({ navigation }: any) {
 
   const handlePickImage = async () => {
     const result = await imageService.selectImage();
-
     if (result.type === 'permission_denied') {
-      Alert.alert(
-        'Permissão necessária',
-        'Precisamos acessar sua galeria para adicionar uma foto ao pet. Habilite nas configurações do celular.'
-      );
+      Alert.alert(t('common.warning'), 'Precisamos acessar sua galeria. Habilite nas configurações do celular.');
       return;
     }
-
     if (result.type === 'success') {
       setSelectedImage({ uri: result.uri, base64: result.base64 });
     }
   };
 
+  const handlePickVaccine = async () => {
+    const result = await imageService.selectImage();
+    if (result.type === 'permission_denied') {
+      Alert.alert(t('common.warning'), 'Precisamos acessar sua galeria. Habilite nas configurações do celular.');
+      return;
+    }
+    if (result.type === 'success') {
+      setVaccineImage({ uri: result.uri, base64: result.base64 });
+    }
+  };
+
   const handleSavePet = async () => {
     if (!formData.name || !formData.species) {
-      Alert.alert('Atenção', 'O nome e a espécie do pet são obrigatórios.');
+      Alert.alert(t('common.warning'), 'O nome e a espécie do pet são obrigatórios.');
       return;
     }
     if (!selectedImage) {
-      Alert.alert('Atenção', 'A foto do pet é obrigatória.');
+      Alert.alert(t('common.warning'), 'A foto do pet é obrigatória.');
       return;
     }
 
@@ -77,8 +86,16 @@ export default function AddPetScreen({ navigation }: any) {
     const uploadResult = await imageService.uploadPetPhoto(selectedImage.base64);
     if (uploadResult.type === 'error') {
       setLoading(false);
-      Alert.alert('Erro ao enviar foto', uploadResult.error);
+      Alert.alert(t('common.error'), uploadResult.error);
       return;
+    }
+
+    let vaccineDocUrl: string | null = null;
+    if (vaccineImage) {
+      const vaccineResult = await imageService.uploadVaccinePhoto(vaccineImage.base64);
+      if (vaccineResult.type === 'success') {
+        vaccineDocUrl = vaccineResult.url;
+      }
     }
 
     const response = await petService.createPet({
@@ -88,15 +105,16 @@ export default function AddPetScreen({ navigation }: any) {
       age: parseInt(formData.age) || 0,
       bio: formData.bio,
       image_url: uploadResult.url,
+      vaccine_doc_url: vaccineDocUrl,
     });
 
     setLoading(false);
 
     if (response.success) {
-      Alert.alert('Sucesso!', `${formData.name} foi adicionado ao seu perfil.`);
+      Alert.alert(t('common.success'), `${formData.name} foi adicionado ao seu perfil.`);
       navigation.goBack();
     } else {
-      Alert.alert('Erro', response.error || 'Não foi possível cadastrar o pet.');
+      Alert.alert(t('common.error'), response.error || 'Não foi possível cadastrar o pet.');
     }
   };
 
@@ -186,6 +204,30 @@ export default function AddPetScreen({ navigation }: any) {
           onChangeText={(text) => setFormData({ ...formData, bio: text })}
         />
 
+        {/* Carteira de Vacinação */}
+        <View style={styles.vaccineSectionHeader}>
+          <Icon name="shield-checkmark-outline" size={20} color="#007AFF" />
+          <Text style={[styles.label, styles.vaccineLabel]}>{t('pets.vaccine')}</Text>
+        </View>
+        <TouchableOpacity style={styles.vaccinePicker} onPress={handlePickVaccine}>
+          {vaccineImage ? (
+            <View style={styles.vaccineSelected}>
+              <Icon name="checkmark-circle" size={22} color="#007AFF" />
+              <Text style={styles.vaccineSelectedText}>{t('pets.vaccineSelected')}</Text>
+            </View>
+          ) : (
+            <View style={styles.vaccineEmpty}>
+              <Icon name="document-attach-outline" size={28} color="#007AFF" />
+              <Text style={styles.vaccineHintText}>{t('pets.vaccineHint')}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        {vaccineImage && (
+          <TouchableOpacity onPress={handlePickVaccine} style={styles.changePhotoLink}>
+            <Text style={[styles.changePhotoText, { color: '#007AFF' }]}>{t('pets.vaccineChange')}</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity
           style={styles.saveButton}
           onPress={handleSavePet}
@@ -248,6 +290,21 @@ const styles = StyleSheet.create({
   imagePlaceholderText: { color: colors.primary, fontSize: 14, fontWeight: '500' },
   changePhotoLink: { alignItems: 'center', marginTop: 8 },
   changePhotoText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+  vaccineSectionHeader: { flexDirection: 'row', alignItems: 'center', marginTop: 15, gap: 6, marginBottom: 8 },
+  vaccineLabel: { marginTop: 0, marginBottom: 0, color: '#007AFF' },
+  vaccinePicker: {
+    borderWidth: 1.5,
+    borderColor: '#007AFF',
+    borderStyle: 'dashed',
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#F0F6FF',
+    padding: 16,
+  },
+  vaccineEmpty: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  vaccineSelected: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  vaccineHintText: { fontSize: 14, color: '#007AFF', flex: 1 },
+  vaccineSelectedText: { fontSize: 14, color: '#007AFF', fontWeight: '600' },
   saveButton: {
     backgroundColor: colors.primary,
     padding: 16,

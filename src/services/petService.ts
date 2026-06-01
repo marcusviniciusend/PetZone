@@ -3,7 +3,7 @@ import { useActivePetStore } from '../stores/activePetStore';
 
 export const petService = {
   // 1. Cadastrar um novo pet
-  async createPet(petData: { name: string; species: string; breed: string; age: number; bio: string; image_url?: string }) {
+  async createPet(petData: { name: string; species: string; breed: string; age: number; bio: string; image_url?: string; vaccine_doc_url?: string | null }) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return { success: false, error: 'Usuário não autenticado' };
@@ -41,7 +41,7 @@ export const petService = {
   },
 
   // 3. Atualizar um pet existente
-  async updatePet(petId: string, petData: { name: string; species: string; breed: string; age: number; bio: string; image_url?: string }) {
+  async updatePet(petId: string, petData: { name: string; species: string; breed: string; age: number; bio: string; image_url?: string; vaccine_doc_url?: string | null }) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return { success: false, error: 'Usuário não autenticado' };
