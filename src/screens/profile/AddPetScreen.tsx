@@ -149,7 +149,7 @@ export default function AddPetScreen({ navigation }: any) {
         <Text style={styles.label}>Nome do Pet *</Text>
         <TextInput
           style={styles.input}
-          placeholder="Ex: Arrascaeta"
+          placeholder="Ex: Rex"
           value={formData.name}
           onChangeText={(text) => setFormData({ ...formData, name: text })}
         />

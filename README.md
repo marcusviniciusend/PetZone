@@ -186,6 +186,61 @@ petzone/
 
 ---
 
+## Geolocalização
+
+O PetZone usa `expo-location` para descobrir pets próximos ao usuário.
+
+### Como funciona
+
+1. **Permissão em tempo de execução** — ao abrir o swipe, o app solicita permissão de localização em primeiro plano (`requestForegroundPermissionsAsync`). Se negada, a busca cai no modo sem filtro de distância.
+2. **Coordenadas salvas no Supabase** — latitude, longitude e `location_updated_at` são gravados na tabela `profiles` a cada sessão.
+3. **Busca por proximidade** — os pets são listados via função RPC `get_nearby_pets` (PostGIS ou cálculo de Haversine no banco), recebendo a posição do usuário e o raio máximo em km.
+4. **Cálculo de distância no cliente** — `locationService.calculateDistance()` usa a fórmula de Haversine para exibir a distância no card de cada pet.
+
+### Configuração necessária no Supabase
+
+Adicione as colunas à tabela `profiles`:
+
+```sql
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS latitude  DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS location_updated_at TIMESTAMPTZ;
+```
+
+Crie a função RPC usada pelo `locationService.getNearbyPets()`:
+
+```sql
+CREATE OR REPLACE FUNCTION get_nearby_pets(
+  user_lat        DOUBLE PRECISION,
+  user_lon        DOUBLE PRECISION,
+  max_distance    DOUBLE PRECISION,  -- km
+  current_user_id UUID,
+  my_pet_uuid     UUID
+)
+RETURNS TABLE (...) -- ajuste as colunas conforme seu schema
+LANGUAGE sql
+AS $$
+  SELECT p.*, (
+    6371 * acos(
+      cos(radians(user_lat)) * cos(radians(pr.latitude)) *
+      cos(radians(pr.longitude) - radians(user_lon)) +
+      sin(radians(user_lat)) * sin(radians(pr.latitude))
+    )
+  ) AS distance_km
+  FROM pets p
+  JOIN profiles pr ON pr.id = p.owner_id
+  WHERE pr.id <> current_user_id
+    AND p.id <> my_pet_uuid
+  HAVING distance_km <= max_distance
+  ORDER BY distance_km;
+$$;
+```
+
+> Se o usuário negar a permissão ou não tiver coordenadas salvas, o app exibe todos os pets disponíveis sem filtro de distância.
+
+---
+
 ## Variáveis de Ambiente
 
 | Variável | Descrição |
