@@ -42,7 +42,7 @@ Desenvolvido com React Native + Expo, backend Supabase e suporte a múltiplos id
 Antes de começar, certifique-se de ter instalado:
 
 - [Node.js](https://nodejs.org/) **>= 20.0.0**
-- [npm](https://www.npmjs.com/) ou [yarn](https://yarnpkg.com/)
+- [yarn](https://yarnpkg.com/)
 - [Expo Go](https://expo.dev/client) no dispositivo físico **ou** um emulador Android/iOS configurado
 - Uma conta no [Supabase](https://supabase.com/) com projeto criado
 
@@ -60,7 +60,7 @@ cd PetZone
 ### 2. Instale as dependências
 
 ```bash
-npm install
+yarn install
 ```
 
 ### 3. Configure as variáveis de ambiente
@@ -91,7 +91,7 @@ Após iniciar, escaneie o QR Code com o app **Expo Go** no seu celular (Android 
 ### Android (emulador ou dispositivo USB)
 
 ```bash
-npm run android
+yarn android
 # ou
 npx expo run:android
 ```
@@ -99,7 +99,7 @@ npx expo run:android
 ### iOS (apenas macOS, requer Xcode)
 
 ```bash
-npm run ios
+yarn ios
 # ou
 npx expo run:ios
 ```
@@ -110,11 +110,11 @@ npx expo run:ios
 
 | Comando | Descrição |
 |---|---|
-| `npm start` | Inicia o Metro Bundler |
-| `npm run android` | Builda e executa no Android |
-| `npm run ios` | Builda e executa no iOS |
-| `npm run lint` | Executa o ESLint |
-| `npm test` | Executa os testes com Jest |
+| `yarn start` | Inicia o Metro Bundler |
+| `yarn android` | Builda e executa no Android |
+| `yarn ios` | Builda e executa no iOS |
+| `yarn lint` | Executa o ESLint |
+| `yarn test` | Executa os testes com Jest |
 
 ---
 

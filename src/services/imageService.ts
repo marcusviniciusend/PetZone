@@ -57,6 +57,27 @@ export const imageService = {
     }
   },
 
+  async uploadProfilePhoto(base64: string): Promise<UploadResult> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { type: 'error', error: 'Usuário não autenticado.' };
+
+      const filePath = `profile/${user.id}.jpg`;
+      const arrayBuffer = decode(base64);
+
+      const { error: uploadError } = await supabase.storage
+        .from(BUCKET)
+        .upload(filePath, arrayBuffer, { contentType: 'image/jpeg', upsert: true });
+
+      if (uploadError) return { type: 'error', error: uploadError.message };
+
+      const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+      return { type: 'success', url: data.publicUrl };
+    } catch {
+      return { type: 'error', error: 'Falha inesperada ao enviar a foto.' };
+    }
+  },
+
   async uploadVaccinePhoto(base64: string): Promise<UploadResult> {
     try {
       const { data: { user } } = await supabase.auth.getUser();

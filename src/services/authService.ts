@@ -19,9 +19,9 @@ export const authService = {
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([{ id: data.user.id, full_name: name }]);
-          
+
         if (profileError) {
-          console.error('Erro ao salvar o nome no perfil:', profileError.message);
+          return { success: false, error: 'Conta criada, mas houve um erro ao salvar o perfil. Tente fazer login.' };
         }
       }
 

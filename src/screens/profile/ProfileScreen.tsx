@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Modal, Switch, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Modal, Switch, ScrollView, Image } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '../../lib/supabase';
 import { petService } from '../../services/petService';
@@ -10,6 +10,7 @@ import { Profile, Pet } from '../../types';
 import { colors } from '../../theme/colors';
 import { LanguageSelector } from '../../components/LanguageSelector';
 import { exportUserData, deleteUserData } from '../../utils/lgpd';
+import { imageService } from '../../services/imageService';
 import _Icon from 'react-native-vector-icons/Ionicons';
 
 const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
@@ -22,6 +23,7 @@ export default function ProfileScreen() {
   const [showSettings, setShowSettings] = useState(false);
   const [showPets, setShowPets] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [myPets, setMyPets] = useState<Pet[]>([]);
   const { activePetId, setActivePetId } = useActivePetStore();
 
@@ -47,6 +49,27 @@ export default function ProfileScreen() {
   const handleOpenPets = async () => {
     await loadMyPets();
     setShowPets(true);
+  };
+
+  const handlePickProfilePhoto = async () => {
+    const selected = await imageService.selectImage();
+    if (selected.type === 'permission_denied') {
+      Alert.alert('Permissão necessária', 'Permita o acesso à galeria nas configurações do dispositivo.');
+      return;
+    }
+    if (selected.type === 'cancelled') return;
+
+    setUploadingPhoto(true);
+    const upload = await imageService.uploadProfilePhoto(selected.base64);
+    if (upload.type === 'error') {
+      Alert.alert('Erro', upload.error);
+      setUploadingPhoto(false);
+      return;
+    }
+
+    await profileService.updateAvatar(upload.url);
+    setProfile(prev => prev ? { ...prev, avatar_url: upload.url } : prev);
+    setUploadingPhoto(false);
   };
 
   const handleSignOut = async () => {
@@ -95,9 +118,16 @@ export default function ProfileScreen() {
       {/* Cabeçalho do Perfil */}
       <View style={styles.header}>
         <View style={styles.imagePlaceholder}>
-          <Icon name="person" size={80} color="#ccc" />
-          <TouchableOpacity style={styles.editImageBtn}>
-            <Icon name="camera" size={20} color="#fff" />
+          {profile?.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
+          ) : (
+            <Icon name="person" size={80} color="#ccc" />
+          )}
+          <TouchableOpacity style={styles.editImageBtn} onPress={handlePickProfilePhoto} disabled={uploadingPhoto}>
+            {uploadingPhoto
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Icon name="camera" size={20} color="#fff" />
+            }
           </TouchableOpacity>
         </View>
 
@@ -283,6 +313,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { alignItems: 'center', paddingVertical: 40, backgroundColor: '#fff', borderBottomLeftRadius: 30, borderBottomRightRadius: 30 },
   imagePlaceholder: { width: 140, height: 140, borderRadius: 70, backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  avatarImage: { width: 140, height: 140, borderRadius: 70 },
   editImageBtn: { position: 'absolute', bottom: 5, right: 5, backgroundColor: colors.primary, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#fff' },
   name: { fontSize: 24, fontWeight: 'bold', color: colors.text },
   bio: { fontSize: 14, color: colors.text, opacity: 0.6, marginTop: 8, textAlign: 'center', paddingHorizontal: 40 },

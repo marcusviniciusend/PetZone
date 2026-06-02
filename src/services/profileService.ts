@@ -20,6 +20,23 @@ export const profileService = {
     }
   },
 
+  async updateAvatar(avatarUrl: string): Promise<ServiceResult> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return { success: false, error: 'Usuário não autenticado' };
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch {
+      return { success: false, error: 'Erro inesperado ao atualizar avatar.' };
+    }
+  },
+
   async updateProfile(profile: Pick<Profile, 'full_name' | 'bio'>): Promise<ServiceResult> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -27,12 +44,12 @@ export const profileService = {
 
       const { error } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
+        .update({
           full_name: profile.full_name,
           bio: profile.bio,
           updated_at: new Date().toISOString(),
-        });
+        })
+        .eq('id', user.id);
 
       if (error) return { success: false, error: error.message };
       return { success: true };
