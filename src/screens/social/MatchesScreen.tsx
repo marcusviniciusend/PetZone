@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { useMatches } from '../../hooks/useMatches';
 import { MatchedPet } from '../../types';
 
 export default function MatchesScreen({ navigation }: any) {
+  const { t } = useTranslation();
   const { matches, loading } = useMatches();
 
   const handleOpenChat = (match: MatchedPet) => {
@@ -41,7 +43,7 @@ export default function MatchesScreen({ navigation }: any) {
 
       <View style={styles.matchInfo}>
         <Text style={styles.matchName}>{item.name}</Text>
-        <Text style={styles.lastMessage}>{item.species} • {item.breed || 'Raça não definida'}</Text>
+        <Text style={styles.lastMessage}>{item.species} • {item.breed || t('matches.breedUnknown')}</Text>
       </View>
 
       {item.unreadCount > 0 && (
@@ -55,8 +57,8 @@ export default function MatchesScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Meus Matches</Text>
-        <Text style={styles.subtitle}>Pets que você demonstrou interesse!</Text>
+        <Text style={styles.title}>{t('matches.title')}</Text>
+        <Text style={styles.subtitle}>{t('matches.subtitle')}</Text>
       </View>
 
       <FlatList
@@ -66,7 +68,7 @@ export default function MatchesScreen({ navigation }: any) {
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Nenhum match ainda. Volte ao Swipe e dê um like!</Text>
+            <Text style={styles.emptyText}>{t('matches.emptyText')}</Text>
           </View>
         }
       />

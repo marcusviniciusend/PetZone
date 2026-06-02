@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { profileService } from '../../services/profileService';
 import { colors } from '../../theme/colors';
 import _Icon from 'react-native-vector-icons/Ionicons';
@@ -8,6 +9,7 @@ import _Icon from 'react-native-vector-icons/Ionicons';
 const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
 
 export default function EditProfileScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState('');
@@ -33,10 +35,10 @@ export default function EditProfileScreen() {
     setLoading(false);
 
     if (result.success) {
-      Alert.alert('Sucesso', 'Perfil atualizado com sucesso!');
+      Alert.alert(t('common.success'), t('editProfile.successMsg'));
       navigation.goBack();
     } else {
-      Alert.alert('Erro', result.error);
+      Alert.alert(t('common.error'), result.error);
     }
   }
 
@@ -46,35 +48,35 @@ export default function EditProfileScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Editar Perfil</Text>
+        <Text style={styles.title}>{t('editProfile.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.label}>Nome do Tutor</Text>
+        <Text style={styles.label}>{t('editProfile.nameLabel')}</Text>
         <TextInput
           style={styles.input}
           value={fullName}
           onChangeText={setFullName}
-          placeholder="Seu nome"
+          placeholder={t('editProfile.namePlaceholder')}
         />
 
-        <Text style={styles.label}>Bio do Tutor</Text>
+        <Text style={styles.label}>{t('editProfile.bioLabel')}</Text>
         <TextInput
           style={[styles.input, styles.bioInput]}
           value={bio}
           onChangeText={setBio}
-          placeholder="Conte um pouco sobre você para outros tutores..."
+          placeholder={t('editProfile.bioPlaceholder')}
           multiline
           numberOfLines={4}
         />
 
-        <TouchableOpacity 
-          style={styles.saveButton} 
+        <TouchableOpacity
+          style={styles.saveButton}
           onPress={updateProfile}
           disabled={loading}
         >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Salvar Alterações</Text>}
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>{t('editProfile.saveButton')}</Text>}
         </TouchableOpacity>
       </View>
     </ScrollView>

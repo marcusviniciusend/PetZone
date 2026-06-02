@@ -52,7 +52,7 @@ export default function AddPetScreen({ navigation }: any) {
   const handlePickImage = async () => {
     const result = await imageService.selectImage();
     if (result.type === 'permission_denied') {
-      Alert.alert(t('common.warning'), 'Precisamos acessar sua galeria. Habilite nas configurações do celular.');
+      Alert.alert(t('common.warning'), t('addPet.galleryPermission'));
       return;
     }
     if (result.type === 'success') {
@@ -63,7 +63,7 @@ export default function AddPetScreen({ navigation }: any) {
   const handlePickVaccine = async () => {
     const result = await imageService.selectImage();
     if (result.type === 'permission_denied') {
-      Alert.alert(t('common.warning'), 'Precisamos acessar sua galeria. Habilite nas configurações do celular.');
+      Alert.alert(t('common.warning'), t('addPet.galleryPermission'));
       return;
     }
     if (result.type === 'success') {
@@ -73,11 +73,11 @@ export default function AddPetScreen({ navigation }: any) {
 
   const handleSavePet = async () => {
     if (!formData.name || !formData.species) {
-      Alert.alert(t('common.warning'), 'O nome e a espécie do pet são obrigatórios.');
+      Alert.alert(t('common.warning'), t('addPet.missingFields'));
       return;
     }
     if (!selectedImage) {
-      Alert.alert(t('common.warning'), 'A foto do pet é obrigatória.');
+      Alert.alert(t('common.warning'), t('addPet.missingPhoto'));
       return;
     }
 
@@ -111,10 +111,10 @@ export default function AddPetScreen({ navigation }: any) {
     setLoading(false);
 
     if (response.success) {
-      Alert.alert(t('common.success'), `${formData.name} foi adicionado ao seu perfil.`);
+      Alert.alert(t('common.success'), t('addPet.successMsg', { name: formData.name }));
       navigation.goBack();
     } else {
-      Alert.alert(t('common.error'), response.error || 'Não foi possível cadastrar o pet.');
+      Alert.alert(t('common.error'), response.error || t('addPet.errorMsg'));
     }
   };
 
@@ -124,41 +124,41 @@ export default function AddPetScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Novo Pet</Text>
+        <Text style={styles.headerTitle}>{t('addPet.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <View style={styles.form}>
-        <Text style={styles.label}>Foto do Pet *</Text>
+        <Text style={styles.label}>{t('addPet.photoLabel')}</Text>
         <TouchableOpacity style={styles.imagePicker} onPress={handlePickImage}>
           {selectedImage ? (
             <Image source={{ uri: selectedImage.uri }} style={styles.imagePreview} contentFit="cover" cachePolicy="memory-disk" />
           ) : (
             <View style={styles.imagePlaceholder}>
               <Icon name="camera-outline" size={40} color={colors.primary} />
-              <Text style={styles.imagePlaceholderText}>Toque para adicionar uma foto</Text>
+              <Text style={styles.imagePlaceholderText}>{t('addPet.photoPlaceholder')}</Text>
             </View>
           )}
         </TouchableOpacity>
         {selectedImage && (
           <TouchableOpacity onPress={handlePickImage} style={styles.changePhotoLink}>
-            <Text style={styles.changePhotoText}>Trocar foto</Text>
+            <Text style={styles.changePhotoText}>{t('addPet.changePhoto')}</Text>
           </TouchableOpacity>
         )}
 
-        <Text style={styles.label}>Nome do Pet *</Text>
+        <Text style={styles.label}>{t('addPet.nameLabel')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="Ex: Rex"
+          placeholder={t('addPet.namePlaceholder')}
           value={formData.name}
           onChangeText={(text) => setFormData({ ...formData, name: text })}
         />
 
-        <Text style={styles.label}>Espécie *</Text>
+        <Text style={styles.label}>{t('addPet.speciesLabel')}</Text>
         <View style={styles.speciesContainer}>
           <TextInput
             style={styles.input}
-            placeholder="Ex: Cachorro, Gato"
+            placeholder={t('addPet.speciesPlaceholder')}
             value={formData.species}
             onChangeText={handleSpeciesChange}
           />
@@ -177,27 +177,27 @@ export default function AddPetScreen({ navigation }: any) {
           )}
         </View>
 
-        <Text style={styles.label}>Raça</Text>
+        <Text style={styles.label}>{t('addPet.breedLabel')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="Ex: Golden Retriever"
+          placeholder={t('addPet.breedPlaceholder')}
           value={formData.breed}
           onChangeText={(text) => setFormData({ ...formData, breed: text })}
         />
 
-        <Text style={styles.label}>Idade (anos)</Text>
+        <Text style={styles.label}>{t('addPet.ageLabel')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="Ex: 3"
+          placeholder={t('addPet.agePlaceholder')}
           keyboardType="numeric"
           value={formData.age}
           onChangeText={(text) => setFormData({ ...formData, age: text })}
         />
 
-        <Text style={styles.label}>Bio</Text>
+        <Text style={styles.label}>{t('addPet.bioLabel')}</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
-          placeholder="Conte um pouco sobre a personalidade do seu pet..."
+          placeholder={t('addPet.bioPlaceholder')}
           multiline
           numberOfLines={4}
           value={formData.bio}
@@ -236,7 +236,7 @@ export default function AddPetScreen({ navigation }: any) {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.saveButtonText}>Cadastrar Pet</Text>
+            <Text style={styles.saveButtonText}>{t('addPet.saveButton')}</Text>
           )}
         </TouchableOpacity>
       </View>

@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useChat } from '../../hooks/useChat';
 import { Message } from '../../types';
 import { colors } from '../../theme/colors';
@@ -23,25 +24,25 @@ type DateSeparator = { type: 'separator'; id: string; label: string };
 type MessageItem = { type: 'message'; data: Message };
 type ListItem = DateSeparator | MessageItem;
 
-function formatMessageDate(dateStr: string): string {
+function formatMessageDate(dateStr: string, t: (key: string) => string, locale: string): string {
   const date = new Date(dateStr);
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  if (date.toDateString() === today.toDateString()) return 'Hoje';
-  if (date.toDateString() === yesterday.toDateString()) return 'Ontem';
-  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  if (date.toDateString() === today.toDateString()) return t('chat.today');
+  if (date.toDateString() === yesterday.toDateString()) return t('chat.yesterday');
+  return date.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' });
 }
 
-function buildListItems(messages: Message[]): ListItem[] {
+function buildListItems(messages: Message[], t: (key: string) => string, locale: string): ListItem[] {
   const items: ListItem[] = [];
   let lastDateKey = '';
 
   for (const msg of messages) {
     const dateKey = new Date(msg.created_at).toDateString();
     if (dateKey !== lastDateKey) {
-      items.push({ type: 'separator', id: `sep-${dateKey}`, label: formatMessageDate(msg.created_at) });
+      items.push({ type: 'separator', id: `sep-${dateKey}`, label: formatMessageDate(msg.created_at, t, locale) });
       lastDateKey = dateKey;
     }
     items.push({ type: 'message', data: msg });
@@ -62,13 +63,14 @@ interface ChatScreenProps {
 }
 
 export default function ChatScreen({ route, navigation }: ChatScreenProps) {
+  const { t, i18n } = useTranslation();
   const { matchId, otherUserId, otherUserName } = route.params;
   const { messages, loading, currentUserId, sendMessage } = useChat(matchId, otherUserId);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
-  const listItems = useMemo(() => buildListItems(messages), [messages]);
+  const listItems = useMemo(() => buildListItems(messages, t, i18n.language), [messages, t, i18n.language]);
 
   const handleSend = async () => {
     const trimmedMessage = newMessage.trim();
@@ -132,9 +134,7 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Icon name="chatbubbles-outline" size={64} color={colors.inactive} />
-              <Text style={styles.emptyText}>
-                Nenhuma mensagem ainda.{'\n'}Diga olá! 👋
-              </Text>
+              <Text style={styles.emptyText}>{t('chat.emptyText')}</Text>
             </View>
           }
         />
@@ -142,7 +142,7 @@ export default function ChatScreen({ route, navigation }: ChatScreenProps) {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="Mensagem..."
+            placeholder={t('chat.placeholder')}
             placeholderTextColor={colors.inactive}
             value={newMessage}
             onChangeText={setNewMessage}

@@ -54,7 +54,7 @@ export default function ProfileScreen() {
   const handlePickProfilePhoto = async () => {
     const selected = await imageService.selectImage();
     if (selected.type === 'permission_denied') {
-      Alert.alert('Permissão necessária', 'Permita o acesso à galeria nas configurações do dispositivo.');
+      Alert.alert(t('profile.permissionRequired'), t('profile.permissionMsg'));
       return;
     }
     if (selected.type === 'cancelled') return;
@@ -62,7 +62,7 @@ export default function ProfileScreen() {
     setUploadingPhoto(true);
     const upload = await imageService.uploadProfilePhoto(selected.base64);
     if (upload.type === 'error') {
-      Alert.alert('Erro', upload.error);
+      Alert.alert(t('common.error'), upload.error);
       setUploadingPhoto(false);
       return;
     }
@@ -81,7 +81,7 @@ export default function ProfileScreen() {
       const json = await exportUserData();
       Alert.alert(t('settings.exportAlertTitle'), json, [{ text: 'OK' }]);
     } catch {
-      Alert.alert(t('common.error'), 'Não foi possível exportar os dados.');
+      Alert.alert(t('common.error'), t('profile.exportError'));
     }
   };
 
@@ -131,27 +131,27 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.name}>{profile?.full_name || 'Tutor Sem Nome'}</Text>
-        <Text style={styles.bio}>{profile?.bio || 'Adicione uma bio para que outros tutores o conheçam!'}</Text>
+        <Text style={styles.name}>{profile?.full_name || t('profile.noName')}</Text>
+        <Text style={styles.bio}>{profile?.bio || t('profile.noBio')}</Text>
       </View>
 
       {/* Menu Principal */}
       <View style={styles.menu}>
         <TouchableOpacity style={styles.menuItem} onPress={handleOpenPets}>
           <Icon name="paw" size={24} color={colors.primary} />
-          <Text style={styles.menuText}>Meus Pets</Text>
+          <Text style={styles.menuText}>{t('profile.myPets')}</Text>
           <Icon name="chevron-forward" size={20} color="#ccc" style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.menuItem} onPress={() => setShowSettings(true)}>
           <Icon name="settings-outline" size={24} color={colors.text} />
-          <Text style={styles.menuText}>Configurações</Text>
+          <Text style={styles.menuText}>{t('settings.title')}</Text>
           <Icon name="chevron-forward" size={20} color="#ccc" style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
 
         <TouchableOpacity style={[styles.menuItem, styles.logoutBtn]} onPress={handleSignOut}>
           <Icon name="log-out-outline" size={24} color="#ff4444" />
-          <Text style={[styles.menuText, { color: '#ff4444' }]}>Sair da Conta</Text>
+          <Text style={[styles.menuText, { color: '#ff4444' }]}>{t('profile.logout')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -159,7 +159,7 @@ export default function ProfileScreen() {
       <Modal visible={showPets} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Meus Pets</Text>
+            <Text style={styles.modalTitle}>{t('profile.myPets')}</Text>
             <TouchableOpacity onPress={() => setShowPets(false)}>
               <Icon name="close" size={28} color={colors.text} />
             </TouchableOpacity>
@@ -169,7 +169,7 @@ export default function ProfileScreen() {
             {myPets.length === 0 ? (
               <View style={styles.emptyState}>
                 <Icon name="paw-outline" size={60} color="#ddd" />
-                <Text style={styles.emptyText}>Você ainda não cadastrou nenhum pet.</Text>
+                <Text style={styles.emptyText}>{t('profile.noPets')}</Text>
                 <TouchableOpacity
                   style={styles.primaryButton}
                   onPress={() => {
@@ -177,14 +177,12 @@ export default function ProfileScreen() {
                     navigation.navigate('AddPet');
                   }}
                 >
-                  <Text style={styles.primaryButtonText}>+ Adicionar Pet</Text>
+                  <Text style={styles.primaryButtonText}>{t('profile.addPet')}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <View>
-                <Text style={styles.activePetHint}>
-                  Toque no ícone de rádio para selecionar o pet ativo no Swipe.
-                </Text>
+                <Text style={styles.activePetHint}>{t('profile.activePetHint')}</Text>
 
                 {myPets.map((pet) => {
                   const isActive = pet.id === activePetId;
@@ -211,9 +209,9 @@ export default function ProfileScreen() {
                             <Icon name="shield-checkmark" size={16} color="#007AFF" style={{ marginLeft: 6 }} />
                           ) : null}
                         </View>
-                        <Text style={styles.petDetailText}>{pet.species} • {pet.breed || 'Raça não definida'}</Text>
+                        <Text style={styles.petDetailText}>{pet.species} • {pet.breed || t('profile.breedUnknown')}</Text>
                         {isActive && (
-                          <Text style={styles.activePetBadge}>Ativo no Swipe</Text>
+                          <Text style={styles.activePetBadge}>{t('profile.activeSwipe')}</Text>
                         )}
                       </View>
 
@@ -238,7 +236,7 @@ export default function ProfileScreen() {
                     navigation.navigate('AddPet');
                   }}
                 >
-                  <Text style={styles.primaryButtonText}>+ Adicionar Outro Pet</Text>
+                  <Text style={styles.primaryButtonText}>{t('profile.addAnotherPet')}</Text>
                 </TouchableOpacity>
               </View>
             )}

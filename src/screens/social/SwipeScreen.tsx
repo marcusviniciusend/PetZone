@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import Swiper from 'react-native-deck-swiper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import _Icon from 'react-native-vector-icons/Ionicons';
 
 const Icon = _Icon as React.ComponentType<{ name: string; size: number; color: string; style?: object }>;
@@ -19,46 +20,51 @@ import { useSwipeStore } from '../../stores/swipeStore';
 import { colors } from '../../theme/colors';
 import { Pet } from '../../types';
 
-type SpeciesFilter = 'Todos' | 'Cachorro' | 'Gato' | 'Outro';
-type AgeFilter = 'Todos' | 'Filhote' | 'Adulto' | 'Idoso';
+type SpeciesFilter = 'all' | 'dog' | 'cat' | 'other';
+type AgeFilter = 'all' | 'puppy' | 'adult' | 'senior';
 
-const SPECIES_OPTIONS: SpeciesFilter[] = ['Todos', 'Cachorro', 'Gato', 'Outro'];
-const AGE_OPTIONS: AgeFilter[] = ['Todos', 'Filhote', 'Adulto', 'Idoso'];
+const SPECIES_OPTIONS: SpeciesFilter[] = ['all', 'dog', 'cat', 'other'];
+const AGE_OPTIONS: AgeFilter[] = ['all', 'puppy', 'adult', 'senior'];
+
+function matchesSpeciesFilter(species: string, filter: SpeciesFilter): boolean {
+  if (filter === 'all') return true;
+  const s = species.toLowerCase();
+  if (filter === 'other') return !['cachorro', 'gato'].includes(s);
+  if (filter === 'dog') return s === 'cachorro';
+  if (filter === 'cat') return s === 'gato';
+  return true;
+}
 
 function matchesAgeFilter(age: number | undefined, filter: AgeFilter): boolean {
-  if (filter === 'Todos' || age === undefined) return true;
-  if (filter === 'Filhote') return age <= 1;
-  if (filter === 'Adulto') return age > 1 && age <= 7;
+  if (filter === 'all' || age === undefined) return true;
+  if (filter === 'puppy') return age <= 1;
+  if (filter === 'adult') return age > 1 && age <= 7;
   return age > 7;
 }
 
 export default function SwipeScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const { pets, loading, error, refresh } = useSwipe();
   const { maxDistanceKm, setMaxDistance } = useSwipeStore();
   const swiperRef = useRef<any>(null);
   const [matchedPet, setMatchedPet] = useState<Pet | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [speciesFilter, setSpeciesFilter] = useState<SpeciesFilter>('Todos');
-  const [ageFilter, setAgeFilter] = useState<AgeFilter>('Todos');
+  const [speciesFilter, setSpeciesFilter] = useState<SpeciesFilter>('all');
+  const [ageFilter, setAgeFilter] = useState<AgeFilter>('all');
 
   // Estados pendentes do modal (só aplicam ao fechar)
   const [pendingDistance, setPendingDistance] = useState(maxDistanceKm ?? 50);
   const [distanceLimitEnabled, setDistanceLimitEnabled] = useState(maxDistanceKm !== null);
 
   const filteredPets = useMemo(() => {
-    return pets.filter(pet => {
-      const speciesMatch =
-        speciesFilter === 'Todos' ||
-        (speciesFilter === 'Outro'
-          ? !['cachorro', 'gato'].includes(pet.species.toLowerCase())
-          : pet.species.toLowerCase() === speciesFilter.toLowerCase());
-      return speciesMatch && matchesAgeFilter(pet.age, ageFilter);
-    });
+    return pets.filter(pet =>
+      matchesSpeciesFilter(pet.species, speciesFilter) && matchesAgeFilter(pet.age, ageFilter)
+    );
   }, [pets, speciesFilter, ageFilter]);
 
   const hasActiveFilter =
-    speciesFilter !== 'Todos' || ageFilter !== 'Todos' || maxDistanceKm !== null;
+    speciesFilter !== 'all' || ageFilter !== 'all' || maxDistanceKm !== null;
 
   const openFilters = () => {
     setPendingDistance(maxDistanceKm ?? 50);
@@ -75,8 +81,8 @@ export default function SwipeScreen() {
   };
 
   const clearAll = () => {
-    setSpeciesFilter('Todos');
-    setAgeFilter('Todos');
+    setSpeciesFilter('all');
+    setAgeFilter('all');
     setDistanceLimitEnabled(false);
     setPendingDistance(50);
     const hadDistance = maxDistanceKm !== null;
@@ -90,11 +96,7 @@ export default function SwipeScreen() {
     if (!pet) return;
     const response = await matchService.registerInteraction(pet.id, 'like');
     if (response.error === 'NO_PET_FOUND') {
-      Alert.alert(
-        'Pet não cadastrado',
-        'Você precisa cadastrar um pet antes de dar like! Vá em Perfil > Adicionar Pet.',
-        [{ text: 'OK' }],
-      );
+      Alert.alert(t('swipe.noPetTitle'), t('swipe.noPetMsg'), [{ text: 'OK' }]);
       return;
     }
     if (response.match) setMatchedPet(pet);
@@ -105,11 +107,7 @@ export default function SwipeScreen() {
     if (!pet) return;
     matchService.registerInteraction(pet.id, 'dislike').then(response => {
       if (response.error === 'NO_PET_FOUND') {
-        Alert.alert(
-          'Pet não cadastrado',
-          'Você precisa cadastrar um pet antes de dar like! Vá em Perfil > Adicionar Pet.',
-          [{ text: 'OK' }],
-        );
+        Alert.alert(t('swipe.noPetTitle'), t('swipe.noPetMsg'), [{ text: 'OK' }]);
       }
     });
   };
@@ -149,15 +147,15 @@ export default function SwipeScreen() {
         <View style={styles.emptyContainer}>
           {pets.length === 0 ? (
             <>
-              <Text style={styles.title}>Fim da linha!</Text>
-              <Text style={styles.emptySubtext}>Não há mais pets disponíveis no momento.</Text>
+              <Text style={styles.title}>{t('swipe.emptyTitle')}</Text>
+              <Text style={styles.emptySubtext}>{t('swipe.emptySubtext')}</Text>
             </>
           ) : (
             <>
-              <Text style={styles.title}>Nenhum resultado</Text>
-              <Text style={styles.emptySubtext}>Tente ajustar os filtros para ver mais pets.</Text>
+              <Text style={styles.title}>{t('swipe.noResultsTitle')}</Text>
+              <Text style={styles.emptySubtext}>{t('swipe.noResultsSubtext')}</Text>
               <TouchableOpacity style={styles.clearFiltersBtn} onPress={clearAll}>
-                <Text style={styles.clearFiltersBtnText}>Limpar Filtros</Text>
+                <Text style={styles.clearFiltersBtnText}>{t('swipe.clearFilters')}</Text>
               </TouchableOpacity>
             </>
           )}
@@ -182,14 +180,14 @@ export default function SwipeScreen() {
               animateCardOpacity
               overlayLabels={{
                 left: {
-                  title: 'NÃO',
+                  title: t('swipe.overlayNo'),
                   style: {
                     label: { backgroundColor: colors.danger, color: 'white', fontSize: 24 },
                     wrapper: { flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'flex-start', marginTop: 30, marginLeft: -30 },
                   },
                 },
                 right: {
-                  title: 'MATCH!',
+                  title: t('swipe.overlayMatch'),
                   style: {
                     label: { backgroundColor: colors.success, color: 'white', fontSize: 24 },
                     wrapper: { flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'flex-start', marginTop: 30, marginLeft: 30 },
@@ -240,9 +238,9 @@ export default function SwipeScreen() {
         >
           <View style={styles.filterSheet}>
             <View style={styles.filterHandle} />
-            <Text style={styles.filterTitle}>Filtros</Text>
+            <Text style={styles.filterTitle}>{t('swipe.filters')}</Text>
 
-            <Text style={styles.filterLabel}>Espécie</Text>
+            <Text style={styles.filterLabel}>{t('swipe.speciesLabel')}</Text>
             <View style={styles.filterRow}>
               {SPECIES_OPTIONS.map(opt => (
                 <TouchableOpacity
@@ -251,13 +249,13 @@ export default function SwipeScreen() {
                   onPress={() => setSpeciesFilter(opt)}
                 >
                   <Text style={[styles.filterChipText, speciesFilter === opt && styles.filterChipTextActive]}>
-                    {opt}
+                    {t(`swipe.species.${opt}`)}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={styles.filterLabel}>Faixa de Idade</Text>
+            <Text style={styles.filterLabel}>{t('swipe.ageLabel')}</Text>
             <View style={styles.filterRow}>
               {AGE_OPTIONS.map(opt => (
                 <TouchableOpacity
@@ -266,17 +264,17 @@ export default function SwipeScreen() {
                   onPress={() => setAgeFilter(opt)}
                 >
                   <Text style={[styles.filterChipText, ageFilter === opt && styles.filterChipTextActive]}>
-                    {opt}
+                    {t(`swipe.age.${opt}`)}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             <View style={styles.distanceHeader}>
-              <Text style={styles.filterLabel}>Distância Máxima</Text>
+              <Text style={styles.filterLabel}>{t('swipe.distanceLabel')}</Text>
               <View style={styles.distanceToggle}>
                 <Text style={styles.distanceToggleLabel}>
-                  {distanceLimitEnabled ? `${pendingDistance} km` : 'Sem limite'}
+                  {distanceLimitEnabled ? `${pendingDistance} km` : t('swipe.noLimit')}
                 </Text>
                 <Switch
                   value={distanceLimitEnabled}
@@ -295,12 +293,12 @@ export default function SwipeScreen() {
             )}
 
             <TouchableOpacity style={styles.applyBtn} onPress={applyFilters}>
-              <Text style={styles.applyBtnText}>Aplicar</Text>
+              <Text style={styles.applyBtnText}>{t('swipe.apply')}</Text>
             </TouchableOpacity>
 
             {hasActiveFilter && (
               <TouchableOpacity style={styles.clearBtn} onPress={clearAll}>
-                <Text style={styles.clearBtnText}>Limpar Filtros</Text>
+                <Text style={styles.clearBtnText}>{t('swipe.clearFilters')}</Text>
               </TouchableOpacity>
             )}
           </View>
