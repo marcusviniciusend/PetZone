@@ -190,7 +190,7 @@ petzone/
 
 O PetZone usa `expo-location` para descobrir pets próximos ao usuário.
 
-### Como funciona:
+### Como funciona
 
 1. **Permissão em tempo de execução** — ao abrir o swipe, o app solicita permissão de localização em primeiro plano (`requestForegroundPermissionsAsync`). Se negada, a busca cai no modo sem filtro de distância.
 2. **Coordenadas salvas no Supabase** — latitude, longitude e `location_updated_at` são gravados na tabela `profiles` a cada sessão.
@@ -255,4 +255,3 @@ $$;
 ## Licença
 
 Este projeto foi desenvolvido como projeto de extensão universitária no **iCEV**.
-.
